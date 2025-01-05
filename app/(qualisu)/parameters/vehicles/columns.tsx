@@ -47,20 +47,6 @@ export const columns: ColumnDef<VehiclesColumn>[] = [
     enableHiding: false
   },
   {
-    accessorKey: 'group',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Group
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    }
-  },
-  {
     accessorKey: 'model',
     header: ({ column }) => {
       return (
@@ -72,6 +58,9 @@ export const columns: ColumnDef<VehiclesColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="px-4">{row.original.model}</div>
     }
   },
   {
@@ -86,6 +75,43 @@ export const columns: ColumnDef<VehiclesColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="px-4">{row.original.name}</div>
+    }
+  },
+  {
+    accessorKey: 'vinCode',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          VIN Code
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      return <div className="px-4">{row.original.vinCode}</div>
+    }
+  },
+  {
+    accessorKey: 'shortCode',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Short Code
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      return <div className="px-4">{row.original.shortCode}</div>
     }
   },
   {
@@ -107,8 +133,7 @@ export const columns: ColumnDef<VehiclesColumn>[] = [
           className={cn(
             row.original.status === FormStatus.Active
               ? 'bg-green-600'
-              : 'bg-red-600',
-            'capitalize'
+              : 'bg-red-600'
           )}
         >
           {row.original.status}
@@ -116,15 +141,6 @@ export const columns: ColumnDef<VehiclesColumn>[] = [
       )
     }
   },
-  {
-    accessorKey: 'createdAt',
-    header: 'Created Date'
-  },
-  {
-    accessorKey: 'updatedAt',
-    header: 'Updated Date'
-  },
-
   {
     id: 'actions',
     header: 'Actions',

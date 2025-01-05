@@ -17,9 +17,6 @@ interface SimulatorClientProps {
 
 const SimulatorClient = ({ user }: SimulatorClientProps) => {
   const [checklist, setChecklist] = React.useState<any[]>([])
-  const [checklistType, setChecklistType] = React.useState<string>('prev')
-  const [itemNo, setItemNo] = React.useState<string>('')
-  const [pointsId, setPointsId] = React.useState<string>('')
 
   return (
     <ResizablePanelGroup
@@ -29,10 +26,7 @@ const SimulatorClient = ({ user }: SimulatorClientProps) => {
       <ResizablePanel minSize={20} defaultSize={20} className="px-2 py-1">
         <SelectPanel
           user={user}
-          setChecklistType={setChecklistType}
           onChecklistChange={setChecklist as (newChecklist: any[]) => void}
-          setItemNo={setItemNo}
-          setPointsId={setPointsId}
         />
       </ResizablePanel>
       <ResizableHandle />
@@ -42,12 +36,7 @@ const SimulatorClient = ({ user }: SimulatorClientProps) => {
         className="px-2 py-1 space-y-2"
       >
         {checklist.length > 0 ? <VehicleInfo /> : null}
-        <SimulatorsTab
-          checklist={checklist}
-          checklistType={checklistType}
-          itemNo={itemNo}
-          pointsId={pointsId}
-        />
+        <SimulatorsTab checklist={checklist} />
       </ResizablePanel>
     </ResizablePanelGroup>
   )

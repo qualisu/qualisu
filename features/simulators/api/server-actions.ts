@@ -22,11 +22,9 @@ export const getIndependentChecklists = async (pointId: string) => {
 
 export const getMandatoryChecklists = async ({
   pointId,
-  userGroupId,
   itemNo
 }: {
   pointId: string
-  userGroupId?: string
   itemNo?: string
 }) => {
   try {
@@ -47,13 +45,19 @@ export const getMandatoryChecklists = async ({
     }
 
     if (itemNo) {
-      baseQuery.where.itemNo = { has: itemNo }
-    }
+      const vinCodePart = itemNo.substring(0, 11)
 
-    if (userGroupId) {
-      baseQuery.where.AND.push({
-        groups: { some: { id: userGroupId } }
+      // First find the vehicle with this vinCode
+      const vehicle = await db.vehicles.findFirst({
+        where: { vinCode: vinCodePart },
+        include: { models: true }
       })
+
+      if (vehicle) {
+        baseQuery.where.AND.push({
+          models: { some: { id: vehicle.modelsId } }
+        })
+      }
     }
 
     if (baseQuery.where.AND.length === 0) {

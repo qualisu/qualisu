@@ -14,15 +14,12 @@ import ModalProvider from '@/providers/modal-provider'
 import QueryProvider from '@/providers/query-provider'
 import ThemeProvider from '@/providers/theme-provider'
 
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700']
-})
-
 export const metadata: Metadata = {
   title: 'Qualisu',
   description: 'Everything about quality.'
 }
+
+const inter = Inter({ subsets: ['latin'] })
 
 export default async function RootLayout({
   children
@@ -34,7 +31,7 @@ export default async function RootLayout({
   return (
     <SessionProvider session={session}>
       <html lang="en" suppressHydrationWarning>
-        <body className={cn('light:bg-gray-50', inter.className)}>
+        <body className={cn('light:bg-gray-50')}>
           <ThemeProvider
             attribute="class"
             defaultTheme="light"
@@ -46,7 +43,9 @@ export default async function RootLayout({
             </div>
             <ModalProvider />
             <Toaster />
-            <QueryProvider>{children}</QueryProvider>
+            <QueryProvider>
+              <div className={inter.className}>{children}</div>
+            </QueryProvider>
           </ThemeProvider>
         </body>
       </html>

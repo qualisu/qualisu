@@ -29,9 +29,6 @@ import { getMandatoryChecklists } from '@/features/simulators/api/server-actions
 interface SelectPanelProps {
   user: User & { userGroups: (UserGroups & { points: Points[] })[] }
   onChecklistChange: (newChecklist: any[]) => void
-  setChecklistType: (type: string) => void
-  setItemNo: (itemNo: string) => void
-  setPointsId: (pointsId: string) => void
 }
 
 export const formSchema = z.object({
@@ -44,10 +41,7 @@ export type FormValues = z.infer<typeof formSchema>
 
 export default function SelectPanel({
   user,
-  onChecklistChange,
-  setChecklistType,
-  setItemNo,
-  setPointsId
+  onChecklistChange
 }: SelectPanelProps) {
   const { toast } = useToast()
   const [filteredPoints, setFilteredPoints] = useState<Points[]>([])
@@ -68,17 +62,17 @@ export default function SelectPanel({
     try {
       let checklists: any[] = []
       if (values.pointsId) {
+        if (values.itemNo) {
+          localStorage.setItem('checklist_item_no', values.itemNo)
+        }
+
         checklists =
           (await getMandatoryChecklists({
             pointId: values.pointsId,
-            userGroupId: values.userGroupId,
             itemNo: values.itemNo
           })) || []
       }
       onChecklistChange(checklists)
-      setChecklistType(values.itemNo ? 'vehicle' : 'prev')
-      setItemNo(values.itemNo ?? '')
-      setPointsId(values.pointsId ?? '')
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -190,8 +184,8 @@ export default function SelectPanel({
                     placeholder="Enter the barcode number"
                     value={field.value || ''}
                     onChange={field.onChange}
-                    maxLength={12}
-                    minLength={12}
+                    maxLength={17}
+                    minLength={17}
                   />
                 </FormControl>
                 <FormMessage />

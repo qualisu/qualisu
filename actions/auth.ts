@@ -1,5 +1,5 @@
 import { auth } from '@/auth'
-import { User } from '@prisma/client'
+import { User, UserGroups, Points } from '@prisma/client'
 import { db } from '@/lib/db'
 
 export async function getCurrentUser() {
@@ -16,7 +16,9 @@ export async function getCurrentUser() {
   }
 }
 
-export const getUser = async (): Promise<User | null> => {
+export const getUser = async (): Promise<
+  (User & { userGroups: (UserGroups & { points: Points[] })[] }) | null
+> => {
   const session = await getCurrentUser()
   if (!session) return null
 

@@ -8,13 +8,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Actions } from './actions'
 import { Badge } from '@/components/ui/badge'
 import { QuestionsColumn } from '../questions/questions-columns'
-import { ChecklistTypes, Points } from '@prisma/client'
+import { ChecklistTypes, Points, Models } from '@prisma/client'
 
 export type ChecklistsColumn = {
   id: string
   itemNo: string[]
   groups: string[]
-  models: string[]
+  models: Models[]
   vehicle: string[]
   questions: QuestionsColumn[]
   checklistTypes: ChecklistTypes
