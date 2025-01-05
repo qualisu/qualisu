@@ -1,0 +1,330 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum Departments {
+  ARGE
+  URGE
+  GKK
+  PK
+  FQM
+  SSH
+}
+
+model User {
+  id                    String                 @id @default(cuid())
+  name                  String?
+  email                 String?                @unique
+  emailVerified         DateTime?
+  image                 String?
+  password              String?
+  role                  UserRole               @default(USER)
+  dept                  Departments            @default(PK)
+  accounts              Account[]
+  sessions              Session[]
+  isTwoFactorEnabled    Boolean                @default(false)
+  twoFactorConfirmation TwoFactorConfirmation?
+  userGroups            UserGroups[]
+}
+
+model VerificationToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model TwoFactorToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model TwoFactorConfirmation {
+  id     String @id @default(cuid())
+  userId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+}
+
+enum FormStatus {
+  Active
+  Passive
+}
+
+enum SimulatorStatus {
+  Continue
+  Completed
+}
+
+model Failures {
+  id            String          @id @default(cuid())
+  code          String          @unique @db.Text
+  name          String          @db.Text
+  subCategories SubCategories[]
+  status        FormStatus
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model Groups {
+  id         String       @id @default(cuid())
+  name       String       @unique
+  status     FormStatus
+  models     Models[]
+  points     Points[]
+  checklists Checklists[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+model Models {
+  id         String       @id @default(cuid())
+  name       String       @unique @db.Text
+  groupsId   String
+  vehicles   Vehicles[]
+  checklists Checklists[]
+  status     FormStatus
+  image      String       @db.Text()
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  groups Groups @relation(fields: [groupsId], references: [id], onDelete: Cascade)
+
+  @@index([groupsId])
+}
+
+model Vehicles {
+  id        String     @id @default(cuid())
+  name      String     @unique @db.Text
+  modelsId  String
+  pointsId  String?
+  shortCode String     @unique @db.Text
+  vinCode   String     @unique @db.Text
+  status    FormStatus
+  images    String[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  models       Models      @relation(fields: [modelsId], references: [id], onDelete: Cascade)
+  points       Points?     @relation(fields: [pointsId], references: [id])
+  checklists   Checklists? @relation(fields: [checklistsId], references: [id])
+  checklistsId String?
+
+  @@index([modelsId])
+  @@index([pointsId])
+  @@index([checklistsId])
+}
+
+model Points {
+  id           String       @id @default(cuid())
+  name         String       @unique @db.Text
+  groups       Groups[]
+  checklists   Checklists[]
+  vehicles     Vehicles[]
+  status       FormStatus
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  Simulators   Simulators[]
+  UserGroups   UserGroups?  @relation(fields: [userGroupsId], references: [id])
+  userGroupsId String?
+
+  @@index([userGroupsId])
+}
+
+model Categories {
+  id            String          @id @default(cuid())
+  name          String          @unique @db.Text
+  status        FormStatus
+  subCategories SubCategories[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model SubCategories {
+  id           String      @id @default(cuid())
+  name         String      @unique @db.Text
+  categoriesId String
+  failures     Failures[]
+  questions    Questions[]
+  status       FormStatus
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  categories   Categories  @relation(fields: [categoriesId], references: [id], onDelete: Cascade)
+
+  @@index([categoriesId])
+}
+
+model Checklists {
+  id               String       @id @default(cuid())
+  itemNo           String[]
+  questions        Questions[]
+  vehicle          Vehicles[]
+  groups           Groups[]
+  models           Models[]
+  simulators       Simulators[]
+  dealers          Dealers[]
+  points           Points[]
+  checklistTypesId String
+  dateStart        DateTime?
+  dateEnd          DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  checklistTypes ChecklistTypes @relation(fields: [checklistTypesId], references: [id])
+
+  @@index([checklistTypesId])
+}
+
+model Questions {
+  id              String           @id @default(cuid())
+  name            String           @unique @db.Text
+  description     String
+  grade           String
+  checklists      Checklists[]
+  subCategoriesId String
+  checklistTypes  ChecklistTypes[]
+  images          String[]
+  tags            Tags[]
+  status          FormStatus
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  subCategories   SubCategories    @relation(fields: [subCategoriesId], references: [id])
+  Answers         Answers[]
+
+  @@index([subCategoriesId])
+}
+
+model ChecklistTypes {
+  id           String       @id @default(cuid())
+  name         String       @unique @db.Text
+  status       FormStatus
+  questions    Questions[]
+  checklists   Checklists[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  UserGroups   UserGroups?  @relation(fields: [userGroupsId], references: [id])
+  userGroupsId String?
+
+  @@index([userGroupsId])
+}
+
+model Tags {
+  id        String      @id @default(cuid())
+  name      String      @unique @db.Text
+  questions Questions[]
+}
+
+model Dealers {
+  id         String       @id @default(cuid())
+  code       String       @unique @db.Text
+  name       String
+  country    String
+  state      String?
+  city       String?
+  status     FormStatus
+  checklists Checklists[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+model Simulators {
+  id           String          @id @default(cuid())
+  itemNo       String
+  pointsId     String
+  checklistsId String
+  answers      Answers[]
+  status       SimulatorStatus
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  points     Points     @relation(fields: [pointsId], references: [id], onDelete: Cascade)
+  checklists Checklists @relation(fields: [checklistsId], references: [id], onDelete: Cascade)
+
+  @@index([pointsId])
+  @@index([checklistsId])
+}
+
+model Answers {
+  id           String   @id @default(cuid())
+  answer       String
+  description  String
+  images       String[]
+  simulatorsId String?
+  questionId   String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  questions  Questions   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  simulators Simulators? @relation(fields: [simulatorsId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@index([simulatorsId])
+}
+
+model UserGroups {
+  id        String           @id @default(cuid())
+  name      String           @unique @db.Text
+  users     User[]
+  points    Points[]
+  types     ChecklistTypes[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
