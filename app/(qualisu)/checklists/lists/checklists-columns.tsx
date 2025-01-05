@@ -63,6 +63,11 @@ export const columns: ColumnDef<ChecklistsColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return (
+        <div className="px-4">{row.original.checklistTypes.name || '-'}</div>
+      )
     }
   },
   {
@@ -80,7 +85,7 @@ export const columns: ColumnDef<ChecklistsColumn>[] = [
     },
     cell: ({ row }) => {
       return (
-        <div className="flex flex-wrap gap-x-2">
+        <div className="flex flex-wrap gap-x-2 px-4">
           {row.original.groups.slice(0, 2).map((item: any) => (
             <Badge key={item.id}>{item}</Badge>
           ))}
@@ -106,7 +111,7 @@ export const columns: ColumnDef<ChecklistsColumn>[] = [
     },
     cell: ({ row }) => {
       return (
-        <div className="flex flex-wrap gap-x-2">
+        <div className="flex flex-wrap gap-x-2 px-4">
           {row.original.models.slice(0, 2).map((item: any) => (
             <Badge key={item.id}>{item}</Badge>
           ))}
@@ -132,7 +137,7 @@ export const columns: ColumnDef<ChecklistsColumn>[] = [
     },
     cell: ({ row }) => {
       return (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 px-4">
           {row.original.points.slice(0, 2).map((point: any) => (
             <Badge key={point.id}>{point.name}</Badge>
           ))}

@@ -2,8 +2,9 @@
 
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Points, User, UserGroups } from '@prisma/client'
 
 import {
   Form,
@@ -24,12 +25,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
 import { getMandatoryChecklists } from '@/features/simulators/api/server-actions'
-import { Search } from 'lucide-react'
 
 interface SelectPanelProps {
-  points: any[]
-  groups: any[]
-  users: any[]
+  user: User & { userGroups: (UserGroups & { points: Points[] })[] }
   onChecklistChange: (newChecklist: any[]) => void
   setChecklistType: (type: string) => void
   setItemNo: (itemNo: string) => void
@@ -38,33 +36,29 @@ interface SelectPanelProps {
 
 export const formSchema = z.object({
   pointsId: z.string().optional(),
-  groupId: z.string().optional(),
-  itemNo: z.string().optional(),
-  searchQuery: z.string().optional()
+  userGroupId: z.string().optional(),
+  itemNo: z.string().optional()
 })
 
 export type FormValues = z.infer<typeof formSchema>
 
 export default function SelectPanel({
-  points,
-  groups,
-  users,
+  user,
   onChecklistChange,
   setChecklistType,
   setItemNo,
   setPointsId
 }: SelectPanelProps) {
   const { toast } = useToast()
-  const [filteredPoints, setFilteredPoints] = useState(points)
-  const [filteredGroups, setFilteredGroups] = useState(groups)
+  const [filteredPoints, setFilteredPoints] = useState<Points[]>([])
+  const [filteredGroups, setFilteredGroups] = useState(user.userGroups)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       pointsId: '',
-      groupId: '',
-      itemNo: '',
-      searchQuery: ''
+      userGroupId: '',
+      itemNo: ''
     }
   })
 
@@ -77,9 +71,8 @@ export default function SelectPanel({
         checklists =
           (await getMandatoryChecklists({
             pointId: values.pointsId,
-            groupId: values.groupId,
-            itemNo: values.itemNo,
-            searchQuery: values.searchQuery
+            userGroupId: values.userGroupId,
+            itemNo: values.itemNo
           })) || []
       }
       onChecklistChange(checklists)
@@ -98,20 +91,21 @@ export default function SelectPanel({
     }
   }
 
-  const handleSearch = (query: string) => {
-    const searchTerm = query.toLowerCase()
-
-    setFilteredPoints(
-      points.filter((point) => point.name.toLowerCase().includes(searchTerm))
-    )
-    setFilteredGroups(
-      groups.filter((group) => group.name.toLowerCase().includes(searchTerm))
-    )
-  }
-
   const handleChecklistTypeChange = (value: string) => {
     form.setValue('pointsId', value)
     form.setValue('itemNo', '')
+  }
+
+  const handleUserGroupChange = (value: string) => {
+    form.setValue('userGroupId', value)
+    form.setValue('pointsId', '')
+
+    if (value) {
+      const selectedGroup = user.userGroups.find((group) => group.id === value)
+      setFilteredPoints(selectedGroup?.points || [])
+    } else {
+      setFilteredPoints([])
+    }
   }
 
   return (
@@ -119,24 +113,35 @@ export default function SelectPanel({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
-            name="searchQuery"
+            name="userGroupId"
             control={form.control}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Search</FormLabel>
+                <FormLabel>Select User Group</FormLabel>
                 <FormControl>
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search points and groups..."
-                      className="pl-8"
-                      onChange={(e) => {
-                        field.onChange(e.target.value)
-                        handleSearch(e.target.value)
-                      }}
-                    />
-                  </div>
+                  <Select
+                    disabled={isSubmitting}
+                    onValueChange={(value) => {
+                      handleUserGroupChange(value)
+                      field.onChange(value)
+                    }}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a user group" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {filteredGroups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -148,7 +153,7 @@ export default function SelectPanel({
                 <FormLabel>Select Station</FormLabel>
                 <FormControl>
                   <Select
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !form.getValues('userGroupId')}
                     onValueChange={(value) => {
                       handleChecklistTypeChange(value)
                       field.onChange(value)
@@ -164,36 +169,6 @@ export default function SelectPanel({
                       {filteredPoints.map((point) => (
                         <SelectItem key={point.id} value={point.id}>
                           {point.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="groupId"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Select User Group</FormLabel>
-                <FormControl>
-                  <Select
-                    disabled={isSubmitting}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a user group" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.role}
                         </SelectItem>
                       ))}
                     </SelectContent>

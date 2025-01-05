@@ -94,8 +94,8 @@ export const getPointById = async (id: string) => {
       name: point?.name,
       status: point?.status,
       groups: point?.groups,
-      createdAt: format(point?.createdAt ?? new Date(), 'dd-MM-yyyy'),
-      updatedAt: format(point?.updatedAt ?? new Date(), 'dd-MM-yyyy')
+      createdAt: new Date(point?.createdAt ?? new Date()),
+      updatedAt: new Date(point?.updatedAt ?? new Date())
     }
 
     return formattedData
@@ -105,10 +105,21 @@ export const getPointById = async (id: string) => {
   }
 }
 
-export const getPoints = async (): Promise<PointWithGroups[]> => {
+export const getPoints = async (
+  userGroupId?: string
+): Promise<PointWithGroups[]> => {
   try {
     const points = await db.points.findMany({
-      where: { status: 'Active' },
+      where: {
+        status: 'Active',
+        ...(userGroupId && {
+          groups: {
+            some: {
+              id: userGroupId
+            }
+          }
+        })
+      },
       include: { groups: true }
     })
     return points

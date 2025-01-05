@@ -31,11 +31,11 @@ const ChecklistClient = ({ checklists }: QuestionProps) => {
           Add New
         </Button>
       </div>
-      <DataTable
+      <DataTable<ChecklistsColumn, any>
         columns={columns}
         data={checklists}
         filterKey={'checklistTypes'}
-        onDelete={() => {}}
+        isAdd={false}
       />
     </div>
   )

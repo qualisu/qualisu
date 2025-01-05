@@ -9,22 +9,13 @@ import {
 import SelectPanel from './select-panel'
 import SimulatorsTab from './simulators-tab'
 import VehicleInfo from './vehicle-info'
+import { Points, User, UserGroups } from '@prisma/client'
 
 interface SimulatorClientProps {
-  points: any[]
-  users: any[]
-  groups: any[]
-  models: any[]
-  vehicles: any[]
+  user: User & { userGroups: (UserGroups & { points: Points[] })[] }
 }
 
-const SimulatorClient = ({
-  points,
-  users,
-  groups,
-  models,
-  vehicles
-}: SimulatorClientProps) => {
+const SimulatorClient = ({ user }: SimulatorClientProps) => {
   const [checklist, setChecklist] = React.useState<any[]>([])
   const [checklistType, setChecklistType] = React.useState<string>('prev')
   const [itemNo, setItemNo] = React.useState<string>('')
@@ -37,11 +28,7 @@ const SimulatorClient = ({
     >
       <ResizablePanel minSize={20} defaultSize={20} className="px-2 py-1">
         <SelectPanel
-          points={points}
-          users={users}
-          groups={groups}
-          models={models}
-          vehicles={vehicles}
+          user={user}
           setChecklistType={setChecklistType}
           onChecklistChange={setChecklist as (newChecklist: any[]) => void}
           setItemNo={setItemNo}

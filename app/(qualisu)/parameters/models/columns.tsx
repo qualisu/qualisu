@@ -10,7 +10,7 @@ import { Actions } from './actions'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
-export type VehicleModelsColumn = {
+export type ModelsColumn = {
   id: string
   name: string
   group: string
@@ -20,7 +20,7 @@ export type VehicleModelsColumn = {
   updatedAt: string
 }
 
-export const columns: ColumnDef<VehicleModelsColumn>[] = [
+export const columns: ColumnDef<ModelsColumn>[] = [
   {
     id: 'select',
     header: ({ table }) => (

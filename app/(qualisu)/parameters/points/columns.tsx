@@ -15,8 +15,8 @@ export type PointsColumn = {
   name: string
   groups: Groups[]
   status: FormStatus
-  createdAt: string
-  updatedAt: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export const columns: ColumnDef<PointsColumn>[] = [

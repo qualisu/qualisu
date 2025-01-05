@@ -7,7 +7,6 @@ import { MapPin, PlusIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { columns, PointsColumn } from './columns'
 import { deletePoint } from '@/features/parameters/points/api/server-actions'
-import { Groups, Points } from '@prisma/client'
 
 interface PointClientProps {
   id?: string
@@ -39,11 +38,11 @@ const PointClient = ({ data, id }: PointClientProps) => {
           Add New
         </Button>
       </div>
-      <DataTable
+      <DataTable<PointsColumn, any>
         columns={columns}
         data={data}
         filterKey="name"
-        onDelete={handleDelete}
+        isAdd={false}
       />
     </div>
   )

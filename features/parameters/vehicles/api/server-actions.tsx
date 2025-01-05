@@ -87,6 +87,7 @@ export const getVehicles = async () => {
       vinCode: item.vinCode,
       modelId: item.modelsId,
       groupId: item.models.groupsId,
+      images: item.images,
       model: item.models.name,
       group: item.models.groups.name,
       status: item.status,

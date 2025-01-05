@@ -3,18 +3,20 @@ import {
   getChecklistTypes,
   getQuestions
 } from '@/features/checklists/questions/api/server-actions'
-import { ChecklistsColumn } from '../checklists-columns'
 import ChecklistForm from '@/features/checklists/questions/components/checklist-form'
-import { QuestionsColumn } from '../../questions/questions-columns'
 import { ChecklistTypes } from '@prisma/client'
 import { getPoints } from '@/features/parameters/points/api/server-actions'
-import { PointsColumn } from '@/app/(qualisu)/parameters/points/columns'
 import { DealersColumn } from '@/app/(qualisu)/parameters/dealers/dealers-columns'
 import { getDealers } from '@/features/parameters/dealers/api/server-actions'
 import { getVehicles } from '@/features/parameters/vehicles/api/server-actions'
 import { getGroups } from '@/features/parameters/groups/api/server-actions'
 import { getModels } from '@/features/parameters/models/api/server-actions'
+import { PointsColumn } from '@/app/(qualisu)/parameters/points/columns'
 
+import { QuestionsColumn } from '../../questions/questions-columns'
+import { VehiclesColumn } from '@/app/(qualisu)/parameters/vehicles/columns'
+import { GroupsColumn } from '@/app/(qualisu)/parameters/groups/columns'
+import { ModelsColumn } from '@/app/(qualisu)/parameters/models/columns'
 interface Props {
   searchParams: {
     id?: string
@@ -23,8 +25,8 @@ interface Props {
 export default async function CreatePage({ searchParams }: Props) {
   const checklist = (await getChecklistById(searchParams.id ?? '')) as any
   const checklistTypes = await getChecklistTypes()
-  const points = (await getPoints()) as PointsColumn[]
-  const questions = (await getQuestions()) as QuestionsColumn[]
+  const points = await getPoints()
+  const questions = await getQuestions()
   const dealers = (await getDealers()) as DealersColumn[]
   const vehicles = await getVehicles()
   const groups = await getGroups()
@@ -56,32 +58,15 @@ export default async function CreatePage({ searchParams }: Props) {
   return (
     <div className="px-2">
       <ChecklistForm
-        initialData={initialData}
-        questions={questions}
-        dealers={dealers}
+        initialData={initialData as any}
+        questions={questions as QuestionsColumn[]}
+        dealers={dealers as DealersColumn[]}
         checklistTypes={checklistTypes as ChecklistTypes[]}
-        points={points}
+        points={points as PointsColumn[]}
         id={searchParams.id}
-        vehicles={
-          vehicles?.map((vehicle) => ({
-            id: vehicle.id,
-            name: vehicle.name,
-            modelId: vehicle.modelId
-          })) ?? []
-        }
-        groups={
-          groups?.map((group) => ({
-            id: group.id,
-            name: group.name
-          })) ?? []
-        }
-        models={
-          models?.map((model) => ({
-            id: model.id,
-            name: model.name,
-            groupId: model.groupId
-          })) ?? []
-        }
+        vehicles={vehicles as any}
+        groups={groups as any}
+        models={models as any}
       />
     </div>
   )

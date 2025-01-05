@@ -19,8 +19,8 @@ export type VehiclesColumn = {
   group: string
   images: string[]
   status: FormStatus
-  createdAt: string
-  updatedAt: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export const columns: ColumnDef<VehiclesColumn>[] = [

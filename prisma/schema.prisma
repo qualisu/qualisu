@@ -174,19 +174,16 @@ model Vehicles {
 }
 
 model Points {
-  id           String       @id @default(cuid())
-  name         String       @unique @db.Text
-  groups       Groups[]
-  checklists   Checklists[]
-  vehicles     Vehicles[]
-  status       FormStatus
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  Simulators   Simulators[]
-  UserGroups   UserGroups?  @relation(fields: [userGroupsId], references: [id])
-  userGroupsId String?
-
-  @@index([userGroupsId])
+  id         String       @id @default(cuid())
+  name       String       @unique @db.Text
+  groups     Groups[]
+  checklists Checklists[]
+  vehicles   Vehicles[]
+  status     FormStatus
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  Simulators Simulators[]
+  userGroups UserGroups[]
 }
 
 model Categories {
@@ -253,17 +250,14 @@ model Questions {
 }
 
 model ChecklistTypes {
-  id           String       @id @default(cuid())
-  name         String       @unique @db.Text
-  status       FormStatus
-  questions    Questions[]
-  checklists   Checklists[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  UserGroups   UserGroups?  @relation(fields: [userGroupsId], references: [id])
-  userGroupsId String?
-
-  @@index([userGroupsId])
+  id         String       @id @default(cuid())
+  name       String       @unique @db.Text
+  status     FormStatus
+  questions  Questions[]
+  checklists Checklists[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  userGroups UserGroups[]
 }
 
 model Tags {

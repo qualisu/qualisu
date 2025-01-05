@@ -79,6 +79,9 @@ export const getUserGroups = async (): Promise<
 
     return userGroups
   } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
     throw new Error('Failed to fetch user groups')
   }
 }

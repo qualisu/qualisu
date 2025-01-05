@@ -22,18 +22,12 @@ export const getIndependentChecklists = async (pointId: string) => {
 
 export const getMandatoryChecklists = async ({
   pointId,
-  groupId,
-  modelId,
-  vehicleId,
-  itemNo,
-  searchQuery
+  userGroupId,
+  itemNo
 }: {
   pointId: string
-  groupId?: string
-  modelId?: string
-  vehicleId?: string
+  userGroupId?: string
   itemNo?: string
-  searchQuery?: string
 }) => {
   try {
     const baseQuery: any = {
@@ -56,30 +50,9 @@ export const getMandatoryChecklists = async ({
       baseQuery.where.itemNo = { has: itemNo }
     }
 
-    if (vehicleId) {
+    if (userGroupId) {
       baseQuery.where.AND.push({
-        vehicle: { some: { id: vehicleId } }
-      })
-    }
-
-    if (modelId) {
-      baseQuery.where.AND.push({
-        models: { some: { id: modelId } }
-      })
-    }
-
-    if (groupId) {
-      baseQuery.where.AND.push({
-        groups: { some: { id: groupId } }
-      })
-    }
-
-    if (searchQuery) {
-      baseQuery.where.AND.push({
-        OR: [
-          { name: { contains: searchQuery, mode: 'insensitive' } },
-          { description: { contains: searchQuery, mode: 'insensitive' } }
-        ]
+        groups: { some: { id: userGroupId } }
       })
     }
 
