@@ -24,7 +24,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
-import { getMandatoryChecklists } from '@/features/simulators/api/server-actions'
+import { getChecklists } from '@/features/simulators/api/server-actions'
 
 interface SelectPanelProps {
   user: User & { userGroups: (UserGroups & { points: Points[] })[] }
@@ -67,7 +67,7 @@ export default function SelectPanel({
         }
 
         checklists =
-          (await getMandatoryChecklists({
+          (await getChecklists({
             pointId: values.pointsId,
             itemNo: values.itemNo
           })) || []

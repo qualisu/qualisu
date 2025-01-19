@@ -32,13 +32,13 @@ import { useToast } from '@/components/ui/use-toast'
 import { AlertModal } from '@/components/alert-modal'
 import { useState } from 'react'
 import { createVehicle, deleteVehicle } from '../api/server-actions'
-import { VehicleModelsColumn } from '@/app/(qualisu)/parameters/models/columns'
 import { VehiclesColumn } from '@/app/(qualisu)/parameters/vehicles/columns'
 import { UploadDropzone } from '@/components/uploadthing'
+import { ModelsColumn } from '@/app/(qualisu)/parameters/models/columns'
 
 interface Props {
   id?: string
-  models: VehicleModelsColumn[]
+  models: ModelsColumn[]
   initialData: VehiclesColumn
   mode: 'create' | 'edit'
 }
@@ -53,7 +53,7 @@ export const modelSchema = z.object({
   shortCode: z.string().min(1, { message: 'Short code is required.' }),
   vinCode: z.string().min(1, { message: 'VIN code is required.' }),
   modelsId: z.string().min(1, { message: 'Vehicle group is required.' }),
-  images: z.array(z.string()).min(1, { message: 'Image is required.' })
+  images: z.array(z.string()).optional()
 })
 
 export const VehicleForm = ({ id, initialData, models, mode }: Props) => {
@@ -78,7 +78,7 @@ export const VehicleForm = ({ id, initialData, models, mode }: Props) => {
 
   const onSubmit = async (values: z.infer<typeof modelSchema>) => {
     try {
-      await createVehicle(values)
+      await createVehicle({ ...values, images: values.images ?? [] })
       toast({
         variant: 'success',
         title: '🎉 Vehicle model created',

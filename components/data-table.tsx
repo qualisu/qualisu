@@ -12,7 +12,6 @@ import {
   getSortedRowModel,
   ColumnFiltersState,
   getFilteredRowModel,
-  Row,
   VisibilityState,
   getFacetedRowModel,
   getFacetedUniqueValues
@@ -77,7 +76,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar
+      <DataTableToolbar<TData>
         table={table}
         filterKey={filterKey}
         isAdd={isAdd}

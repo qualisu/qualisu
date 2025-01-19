@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button'
 import { useState, useCallback } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { AlertModal } from '@/components/alert-modal'
-import { deleteChecklist } from '@/features/checklists/questions/api/server-actions'
 
 type Props = {
   id: string
@@ -29,7 +28,7 @@ export const Actions = ({ id }: Props) => {
     if (!id) return
     try {
       setLoading(true)
-      await deleteChecklist(id)
+      // await deleteChecklist(id)
       toast({
         variant: 'success',
         title: '🎉 Checklist silindi',

@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { UserGroups, Points, ChecklistTypes } from '@prisma/client'
+import { UserGroups, Points, cTypes } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 
 interface UserGroupParams {
@@ -15,11 +15,9 @@ export const createUserGroup = async (values: UserGroupParams) => {
     const userGroup = await db.userGroups.create({
       data: {
         name: values.name,
+        types: values.types?.map((type) => type as cTypes) || [],
         points: values.points?.length
           ? { connect: values.points.map((id) => ({ id })) }
-          : undefined,
-        types: values.types?.length
-          ? { connect: values.types.map((id) => ({ id })) }
           : undefined
       }
     })
@@ -37,12 +35,8 @@ export const updateUserGroup = async (id: string, values: UserGroupParams) => {
       where: { id },
       data: {
         name: values.name,
-        points: {
-          set: values.points?.map((id) => ({ id })) || []
-        },
-        types: {
-          set: values.types?.map((id) => ({ id })) || []
-        }
+        points: { set: values.points?.map((id) => ({ id })) || [] },
+        types: values.types?.map((type) => type as cTypes) || []
       }
     })
 
@@ -66,14 +60,11 @@ export const deleteUserGroup = async (id: string) => {
 }
 
 export const getUserGroups = async (): Promise<
-  (UserGroups & { points: Points[]; types: ChecklistTypes[] })[]
+  (UserGroups & { points: Points[]; types: cTypes[] })[]
 > => {
   try {
     const userGroups = await db.userGroups.findMany({
-      include: {
-        points: true,
-        types: true
-      },
+      include: { points: true },
       orderBy: { name: 'asc' }
     })
 

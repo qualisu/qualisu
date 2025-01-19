@@ -1,8 +1,8 @@
 import { getModels } from '@/features/parameters/models/api/server-actions'
 import { getVehicleById } from '@/features/parameters/vehicles/api/server-actions'
 import { VehicleForm } from '@/features/parameters/vehicles/components/vehicle-form'
-import { VehicleModelsColumn } from '@/app/(qualisu)/parameters/models/columns'
 import { VehiclesColumn } from '@/app/(qualisu)/parameters/vehicles/columns'
+import { ModelsColumn } from '../../models/columns'
 
 interface Props {
   searchParams: {
@@ -17,7 +17,7 @@ export default async function CreatePage({ searchParams }: Props) {
     <div className="px-2">
       <VehicleForm
         initialData={vehicle as unknown as VehiclesColumn}
-        models={models as unknown as VehicleModelsColumn[]}
+        models={models as unknown as ModelsColumn[]}
         mode={searchParams.id ? 'edit' : 'create'}
       />
     </div>

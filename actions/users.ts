@@ -9,7 +9,7 @@ export type User = {
   name: string | null
   email: string | null
   emailVerified: Date | null
-  role: 'ADMIN' | 'USER'
+  role: 'ADMIN' | 'VIEWER' | 'EDITOR' | 'MOBILE'
   dept: 'ARGE' | 'URGE' | 'GKK' | 'PK' | 'FQM' | 'SSH'
   userGroups: UserGroups[]
 }
@@ -77,7 +77,7 @@ export const createUser = async (data: {
   name: string
   email: string
   password: string
-  role: 'ADMIN' | 'USER'
+  role: 'ADMIN' | 'VIEWER' | 'EDITOR' | 'MOBILE'
   dept: 'ARGE' | 'URGE' | 'GKK' | 'PK' | 'FQM' | 'SSH'
   userGroups: UserGroups[]
 }): Promise<User> => {
@@ -111,5 +111,17 @@ export const createUser = async (data: {
   } catch (error) {
     console.error('Error creating user:', error)
     throw new Error('Failed to create user')
+  }
+}
+
+export async function getRoleAndDepartmentValues() {
+  const { UserRole, Departments } = await import('@prisma/client')
+
+  const roles = Object.values(UserRole)
+  const departments = Object.values(Departments)
+
+  return {
+    roles,
+    departments
   }
 }

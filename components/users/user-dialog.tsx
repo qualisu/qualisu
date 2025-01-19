@@ -1,4 +1,9 @@
-import { type User, type UserGroups } from '@prisma/client'
+import {
+  Departments,
+  UserRole,
+  type User,
+  type UserGroups
+} from '@prisma/client'
 import {
   Dialog,
   DialogContent,
@@ -104,8 +109,8 @@ export const UserDialog = ({
           email: data.email!,
           password: data.password!,
           userGroups: userGroupsData,
-          role: userData.role || 'USER',
-          dept: userData.dept || 'ARGE'
+          role: userData.role || UserRole.VIEWER,
+          dept: userData.dept || Departments.PK
         })
         toast({
           title: 'Kullanıcı başarıyla oluşturuldu',

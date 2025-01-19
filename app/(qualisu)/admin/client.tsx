@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 
 import { useRouter } from 'next/navigation'
 import { MessageCircleQuestion, PlusIcon } from 'lucide-react'
-import { User, UserGroups, Points, ChecklistTypes } from '@prisma/client'
+import { User, UserGroups, Points, cTypes } from '@prisma/client'
 
 import Heading from '@/components/heading'
 import { Button } from '@/components/ui/button'
@@ -29,9 +29,9 @@ interface AdminProps {
     dept: User['dept']
     userGroups: UserGroups[]
   }[]
-  userGroups: (UserGroups & { points: Points[]; types: ChecklistTypes[] })[]
+  userGroups: (UserGroups & { points: Points[]; types: cTypes[] })[]
   points: Points[]
-  types: ChecklistTypes[]
+  types: cTypes[]
 }
 
 const AdminClient = ({ users, userGroups, points, types }: AdminProps) => {

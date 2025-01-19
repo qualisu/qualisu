@@ -1,4 +1,3 @@
-import { ChecklistsColumn } from './checklists-columns'
 import ChecklistClient from './client'
 import { getChecklists } from '@/features/checklists/questions/api/server-actions'
 
@@ -9,7 +8,7 @@ const ChecklistPage = async () => {
     return <div>No data found</div>
   }
 
-  return <ChecklistClient checklists={checklists as ChecklistsColumn[]} />
+  return <ChecklistClient checklists={checklists as any[]} />
 }
 
 export default ChecklistPage

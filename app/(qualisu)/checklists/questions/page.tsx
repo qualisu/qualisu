@@ -9,7 +9,7 @@ const QuestionPage = async () => {
     return <div>No data found</div>
   }
 
-  return <QuestionsClient questions={questions as QuestionsColumn[]} />
+  return <QuestionsClient questions={questions as any} />
 }
 
 export default QuestionPage

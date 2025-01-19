@@ -2,13 +2,13 @@ import { getUserGroups } from '@/actions/user-groups'
 import AdminClient from '@/app/(qualisu)/admin/client'
 import { getUsers } from '@/actions/users'
 import { getPoints } from '@/features/parameters/points/api/server-actions'
-import { getChecklistTypes } from '@/features/checklists/questions/api/server-actions'
+import { cTypes } from '@prisma/client'
 
 const AdminPage = async () => {
   const users = await getUsers()
   const userGroups = await getUserGroups()
   const points = await getPoints()
-  const types = await getChecklistTypes()
+  const types = Object.values(cTypes)
 
   return (
     <div className="h-full">

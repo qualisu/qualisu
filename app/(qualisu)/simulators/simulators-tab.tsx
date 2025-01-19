@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import NotFoundChecklists from '@/app/(qualisu)/simulators/not-found'
 import { ChecklistsColumn } from '../checklists/lists/checklists-columns'
 import { ChecklistCard } from './simulator-card'
+import { useRouter } from 'next/navigation'
+import { createSimulator } from '@/features/simulators/api/server-actions'
 
 interface SimulatorsTabProps {
   checklist: ChecklistsColumn[]
@@ -17,8 +19,22 @@ const CHECKLIST_TYPES = {
 }
 
 export default function SimulatorsTab({ checklist }: SimulatorsTabProps) {
+  const router = useRouter()
+
   const filterChecklistsByType = (types: string[]) =>
     checklist.filter((item) => types.includes(item.checklistTypes.name))
+
+  const handleClick = async (pid: string, cid: string) => {
+    const simulator = await createSimulator({
+      itemNo: getStoredItemNo(),
+      pointsId: pid,
+      checklistsId: cid
+    })
+
+    if (simulator) {
+      router.push(`/simulators/${simulator.id}`)
+    }
+  }
 
   const getStoredItemNo = () => {
     if (typeof window !== 'undefined') {
@@ -49,6 +65,9 @@ export default function SimulatorsTab({ checklist }: SimulatorsTabProps) {
               point={item.points[0]?.name || ''}
               model={item.models[0]?.name || ''}
               itemNo={getStoredItemNo()}
+              onClick={() => {
+                handleClick(item.points[0]?.id, item.id)
+              }}
             />
           ))}
         </div>
@@ -63,6 +82,9 @@ export default function SimulatorsTab({ checklist }: SimulatorsTabProps) {
               point={item.points[0]?.name || ''}
               model={item.models[0]?.name || ''}
               itemNo={getStoredItemNo()}
+              onClick={() => {
+                handleClick(item.points[0]?.id, item.id)
+              }}
             />
           ))}
         </div>
@@ -77,6 +99,9 @@ export default function SimulatorsTab({ checklist }: SimulatorsTabProps) {
               point={item.points[0]?.name || ''}
               model={item.models[0]?.name || ''}
               itemNo={getStoredItemNo()}
+              onClick={() => {
+                handleClick(item.points[0]?.id, item.id)
+              }}
             />
           ))}
         </div>
@@ -91,6 +116,9 @@ export default function SimulatorsTab({ checklist }: SimulatorsTabProps) {
               point={item.points[0]?.name || ''}
               model={item.models[0]?.name || ''}
               itemNo={getStoredItemNo()}
+              onClick={() => {
+                handleClick(item.points[0]?.id, item.id)
+              }}
             />
           ))}
         </div>

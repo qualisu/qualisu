@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { v4 as uuidv4 } from 'uuid'
 import { useEffect, useState } from 'react'
 import { BadgeAlert, Loader2, Trash, XCircle } from 'lucide-react'
-import { ChecklistTypes, FormStatus, Tags } from '@prisma/client'
+import { cTypes, FormStatus, QuestionGrade, Tags } from '@prisma/client'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,16 +31,10 @@ import {
 import Heading from '@/components/heading'
 import { useToast } from '@/components/ui/use-toast'
 import { AlertModal } from '@/components/alert-modal'
-import {
-  createQuestion,
-  createTag,
-  deleteQuestion
-} from '../api/server-actions'
+
 import { QuestionsColumn } from '@/app/(qualisu)/checklists/questions/questions-columns'
 import { Textarea } from '@/components/ui/textarea'
 import { MultiSelect } from '@/components/multi-select'
-import { Grades } from '@/lib/data'
-import { SubCategoriesColumn } from '@/app/(qualisu)/parameters/categories/sub-category-columns'
 import { UploadDropzone } from '@/components/uploadthing'
 import CreatableSelect from 'react-select/creatable'
 import { Badge } from '@/components/ui/badge'
@@ -49,20 +43,20 @@ import { cn } from '@/lib/utils'
 interface Props {
   id?: string
   initialData: QuestionsColumn
-  checklistTypes: ChecklistTypes[]
-  subCategories: SubCategoriesColumn[]
-  tags: Tags[]
+  checklistTypes: any
+  subCategories: any
+  tags: any
 }
 
 export const questionSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(1),
-  description: z.string().trim().min(1),
+  description: z.string().trim().optional(),
   grade: z.string().min(1),
   subCategoriesId: z.string().min(1),
   checklistTypes: z.array(z.string()),
-  images: z.array(z.string()),
-  tags: z.array(z.string()),
+  images: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
   status: z.enum([FormStatus.Active, FormStatus.Passive])
 })
 
@@ -82,11 +76,17 @@ export default function QuestionForm({
   const [images, setImages] = useState<string[]>(initialData?.images ?? [])
   const [imageDeleting, setImageDeleting] = useState(false)
   const [selectedType, setSelectedType] = useState<string[]>(
-    initialData?.checklistTypes?.map((type) => type.id)
+    initialData?.checklistTypes?.map((type) => type)
   )
   const [updatedTags, setUpdatedTags] = useState<Tags[]>(tags)
   const [defaultTags, setDefaultTags] = useState<Tags[]>(
-    initialData?.tags?.map((tag) => ({ id: tag.id, name: tag.name })) ?? []
+    initialData?.tags?.map((tag: any) => ({
+      id: tag.id,
+      name: tag.name,
+      qCatId: tag.qCatId,
+      createdAt: tag.createdAt,
+      updatedAt: tag.updatedAt
+    })) ?? []
   )
 
   useEffect(() => {
@@ -101,20 +101,20 @@ export default function QuestionForm({
     resolver: zodResolver(questionSchema),
     defaultValues: {
       id: initialData.id,
-      name: initialData.name,
-      description: initialData.description,
-      grade: initialData.grade,
-      images: initialData.images,
-      status: initialData.status,
-      subCategoriesId: initialData.subCategoriesId,
+      name: initialData?.name ?? '',
+      description: initialData.description ?? '',
+      grade: initialData.grade ?? '',
+      images: initialData.images ?? [],
+      status: initialData.status ?? '',
+      subCategoriesId: initialData.subCategoriesId ?? '',
       tags: initialData?.tags?.map((tag) => tag.id) ?? [],
-      checklistTypes: initialData?.checklistTypes?.map((type) => type.id) ?? []
+      checklistTypes: initialData?.checklistTypes?.map((type) => type) ?? []
     }
   })
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await createQuestion(values)
+      // await createQuestion(values)
       toast({
         variant: 'success',
         title: '🎉 Failure created',
@@ -135,7 +135,7 @@ export default function QuestionForm({
     if (!id) return
     try {
       setLoading(true)
-      await deleteQuestion(id)
+      // await deleteQuestion(id)
       toast({
         variant: 'success',
         title: '🎉 Failure deleted',
@@ -200,8 +200,12 @@ export default function QuestionForm({
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <Heading
-            title="Create Questions"
-            description="Please create question for checklists."
+            title={id ? 'Edit Question' : 'Create Question'}
+            description={
+              id
+                ? 'Edit your question details.'
+                : 'Please create question for checklists.'
+            }
             icon={<BadgeAlert />}
           />
           {id && (
@@ -260,9 +264,9 @@ export default function QuestionForm({
                   <FormLabel>Checklist Types</FormLabel>
                   <FormControl>
                     <MultiSelect
-                      options={checklistTypes.map((checklistType) => ({
-                        value: checklistType.id,
-                        label: checklistType.name
+                      options={Object.values(cTypes).map((checklistType) => ({
+                        value: checklistType,
+                        label: checklistType
                       }))}
                       onValueChange={(value) => {
                         form.setValue('checklistTypes', selectedType)
@@ -296,7 +300,7 @@ export default function QuestionForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {subCategories.map((subCategories) => (
+                        {subCategories.map((subCategories: any) => (
                           <SelectItem
                             key={subCategories.id}
                             value={subCategories.id}
@@ -329,9 +333,9 @@ export default function QuestionForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Grades.map((grade) => (
-                          <SelectItem key={grade.id} value={grade.id}>
-                            {grade.name}
+                        {Object.values(QuestionGrade).map((grade) => (
+                          <SelectItem key={grade} value={grade}>
+                            {grade}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -439,11 +443,15 @@ export default function QuestionForm({
                       onCreateOption={async (input) => {
                         const newTag = {
                           id: uuidv4(),
-                          name: input
+                          name: input,
+                          qCatId: '1'
                         }
-                        await createTag(newTag)
+                        // await createTag(newTag)
                         addNewTag(newTag)
-                        form.setValue('tags', [...field.value, newTag.id])
+                        form.setValue('tags', [
+                          ...(field.value ?? []),
+                          newTag.id
+                        ])
                       }}
                       className="text-sm h-10"
                       components={{

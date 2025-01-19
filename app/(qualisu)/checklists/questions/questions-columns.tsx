@@ -3,7 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDown } from 'lucide-react'
 
-import { ChecklistTypes, FormStatus, Tags } from '@prisma/client'
+import { cTypes, FormStatus, QuestionGrade, Tags } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Actions } from './actions'
@@ -14,13 +14,13 @@ export type QuestionsColumn = {
   id: string
   name: string
   description: string
-  grade: string
+  grade: QuestionGrade
   category: string
   subCategory: string
   subCategoriesId: string
   tags: Tags[]
   images: string[]
-  checklistTypes: ChecklistTypes[]
+  checklistTypes: cTypes[]
   status: FormStatus
   createdAt: string
   updatedAt: string
@@ -80,8 +80,8 @@ export const columns: ColumnDef<QuestionsColumn>[] = [
       return (
         <div>
           {row.original.checklistTypes.map((type) => (
-            <Badge key={type.id} variant="outline" className="mr-1">
-              {type.name}
+            <Badge key={type} variant="outline" className="mr-1">
+              {type}
             </Badge>
           ))}
         </div>
@@ -89,7 +89,7 @@ export const columns: ColumnDef<QuestionsColumn>[] = [
     }
   },
   {
-    accessorKey: 'subCategory',
+    accessorKey: 'subCategoriesId',
     header: ({ column }) => {
       return (
         <Button
@@ -107,6 +107,9 @@ export const columns: ColumnDef<QuestionsColumn>[] = [
           {row.original.category} - {row.original.subCategory}
         </Badge>
       )
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
     }
   },
   {
@@ -116,7 +119,7 @@ export const columns: ColumnDef<QuestionsColumn>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="text-center w-full" // Center the header
+          className="text-center w-full"
         >
           Status
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -126,8 +129,6 @@ export const columns: ColumnDef<QuestionsColumn>[] = [
     cell: ({ row }) => {
       return (
         <div className="flex justify-center">
-          {' '}
-          {/* Center the cell content */}
           <Badge
             className={cn(
               row.original.status === FormStatus.Active
@@ -140,6 +141,9 @@ export const columns: ColumnDef<QuestionsColumn>[] = [
           </Badge>
         </div>
       )
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
     }
   },
   {

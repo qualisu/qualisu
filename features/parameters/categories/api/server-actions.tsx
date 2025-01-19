@@ -205,3 +205,20 @@ export const deleteSubCategory = async (id: string) => {
     return new NextResponse('Failed to delete sub categories', { status: 500 })
   }
 }
+
+export const getSubCategoryOptions = async () => {
+  try {
+    const subCategories = await db.subCategories.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
+    })
+
+    return subCategories.map((subCategory) => ({
+      label: subCategory.name,
+      value: subCategory.id
+    }))
+  } catch (error) {
+    console.error(error)
+    return []
+  }
+}

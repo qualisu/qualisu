@@ -31,11 +31,11 @@ const QuestionsClient = ({ questions }: QuestionProps) => {
           Add New
         </Button>
       </div>
-      <DataTable
+      <DataTable<QuestionsColumn, any>
         columns={columns}
         data={questions}
         filterKey="name"
-        onDelete={() => {}}
+        isAdd={false}
       />
     </div>
   )

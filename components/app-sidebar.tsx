@@ -3,12 +3,12 @@
 import * as React from 'react'
 import {
   AudioWaveform,
+  BadgeDollarSign,
   CheckCheck,
   GalleryVerticalEnd,
   LayoutDashboardIcon,
   Play,
   Settings,
-  Settings2,
   Settings2Icon
 } from 'lucide-react'
 
@@ -55,6 +55,17 @@ const data = {
         {
           title: 'Questions',
           url: '/checklists/questions'
+        }
+      ]
+    },
+    {
+      title: 'Claims',
+      url: '/claims',
+      icon: BadgeDollarSign,
+      items: [
+        {
+          title: 'Claims',
+          url: '/claims'
         }
       ]
     },

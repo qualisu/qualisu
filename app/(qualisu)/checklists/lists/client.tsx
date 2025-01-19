@@ -34,7 +34,7 @@ const ChecklistClient = ({ checklists }: QuestionProps) => {
       <DataTable<ChecklistsColumn, any>
         columns={columns}
         data={checklists}
-        filterKey={'checklistTypes'}
+        filterKey="type"
         isAdd={false}
       />
     </div>

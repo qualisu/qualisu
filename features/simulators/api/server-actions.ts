@@ -4,23 +4,8 @@ import { AnswerFormValues } from '@/app/(qualisu)/simulators/[id]/answer-form'
 import { db } from '@/lib/db'
 import { SimulatorStatus } from '@prisma/client'
 import { format } from 'date-fns'
-import { NextResponse } from 'next/server'
 
-export const getIndependentChecklists = async (pointId: string) => {
-  try {
-    const res = await db.checklists.findMany({
-      orderBy: { createdAt: 'desc' },
-      where: { points: { some: { id: pointId } } },
-      include: { questions: true, checklistTypes: true }
-    })
-    return res
-  } catch (error) {
-    console.error(error)
-    return new NextResponse('Failed to fetch questions', { status: 500 })
-  }
-}
-
-export const getMandatoryChecklists = async ({
+export const getChecklists = async ({
   pointId,
   itemNo
 }: {
@@ -80,7 +65,7 @@ export const getMandatoryChecklists = async ({
 
     return formatData
   } catch (error) {
-    console.error('Error in getMandatoryChecklists:', error)
+    console.error('Error in getChecklists:', error)
     return []
   }
 }
@@ -144,52 +129,67 @@ export const createSimulator = async ({
 }) => {
   try {
     const existingSimulator = await db.simulators.findFirst({
-      where: { itemNo, pointsId }
+      where: {
+        itemNo,
+        pointsId,
+        checklistsId
+      },
+      include: {
+        points: true,
+        checklists: { include: { questions: true } }
+      }
     })
 
     if (existingSimulator) return existingSimulator
+
+    // First verify that the checklist exists
+    const checklist = await db.checklists.findUnique({
+      where: { id: checklistsId }
+    })
+
+    if (!checklist) {
+      throw new Error('Checklist not found')
+    }
 
     const res = await db.simulators.create({
       data: {
         itemNo,
         pointsId,
-        status: SimulatorStatus.Continue,
-        checklistsId
+        checklistsId,
+        status: SimulatorStatus.Continue
+      },
+      include: {
+        points: true,
+        checklists: { include: { questions: true } }
       }
     })
 
     return res
   } catch (error) {
     console.error('Create simulator error:', error)
+    return null
   }
 }
 
-export const finishSimulators = async (simulator: string) => {
-  try {
-    await db.simulators.update({
-      where: { id: simulator },
-      data: { status: SimulatorStatus.Completed }
-    })
-  } catch (error) {
-    console.error('Finish simulator error:', error)
-  }
-}
+export const getSimulatorById = async (id: string) => {
+  console.log('id', id)
 
-export const getSimulatorId = async ({
-  itemNo,
-  pointsId,
-  checklistsId
-}: {
-  itemNo: string
-  pointsId: string
-  checklistsId: string
-}) => {
   try {
-    const res = await db.simulators.findFirst({
-      where: { itemNo, pointsId, checklistsId }
+    const simulator = await db.simulators.findUnique({
+      where: { id },
+      include: {
+        points: true,
+        checklists: { include: { questions: true } }
+      }
     })
-    return res?.id
+
+    if (!simulator) {
+      throw new Error('Simulator not found')
+    }
+
+    return simulator
   } catch (error) {
-    console.error('Get simulator ID error:', error)
+    console.error('Get simulator error:', error)
+    return null
   }
 }

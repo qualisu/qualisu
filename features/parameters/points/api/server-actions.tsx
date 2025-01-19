@@ -8,6 +8,8 @@ import { PointsColumn } from '@/app/(qualisu)/parameters/points/columns'
 
 type PointWithGroups = Points & {
   groups: Groups[]
+  createdAt: string
+  updatedAt: string
 }
 
 interface CreatePointInput {
@@ -113,16 +115,19 @@ export const getPoints = async (
       where: {
         status: 'Active',
         ...(userGroupId && {
-          groups: {
-            some: {
-              id: userGroupId
-            }
-          }
+          groups: { some: { id: userGroupId } }
         })
       },
       include: { groups: true }
     })
-    return points
+
+    const formattedPoints = points.map((point) => ({
+      ...point,
+      createdAt: format(point.createdAt ?? new Date(), 'dd/MM/yyyy'),
+      updatedAt: format(point.updatedAt ?? new Date(), 'dd/MM/yyyy')
+    }))
+
+    return formattedPoints as PointWithGroups[]
   } catch (error) {
     console.error('Error fetching points:', error)
     return []

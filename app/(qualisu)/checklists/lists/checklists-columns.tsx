@@ -7,25 +7,26 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Actions } from './actions'
 import { Badge } from '@/components/ui/badge'
-import { QuestionsColumn } from '../questions/questions-columns'
-import { ChecklistTypes, Points, Models } from '@prisma/client'
+import {
+  Points,
+  Models,
+  cTypes,
+  Groups,
+  Vehicles,
+  cQuestions
+} from '@prisma/client'
 
 export type ChecklistsColumn = {
   id: string
-  itemNo: string[]
-  groups: string[]
-  models: Models[]
-  vehicle: string[]
-  questions: QuestionsColumn[]
-  checklistTypes: ChecklistTypes
-  dealers: string[]
+  type: cTypes
+  name: string
+  desc: string
   points: Points[]
-  simulators: any[]
-  checklistTypesId: string
-  dateStart: string
-  dateEnd: string
-  createdAt: string
-  updatedAt: string
+  groups: Groups[]
+  models: Models[]
+  vehicles: Vehicles[]
+  questions: cQuestions[]
+  userId: string
 }
 
 export const columns: ColumnDef<ChecklistsColumn>[] = [
@@ -52,7 +53,7 @@ export const columns: ColumnDef<ChecklistsColumn>[] = [
     enableHiding: false
   },
   {
-    accessorKey: 'checklistTypes',
+    accessorKey: 'type',
     header: ({ column }) => {
       return (
         <Button
@@ -65,9 +66,7 @@ export const columns: ColumnDef<ChecklistsColumn>[] = [
       )
     },
     cell: ({ row }) => {
-      return (
-        <div className="px-4">{row.original.checklistTypes.name || '-'}</div>
-      )
+      return <div className="px-4">{row.original.type || '-'}</div>
     }
   },
   {
@@ -85,13 +84,8 @@ export const columns: ColumnDef<ChecklistsColumn>[] = [
     },
     cell: ({ row }) => {
       return (
-        <div className="flex flex-wrap gap-x-2 px-4">
-          {row.original.groups.slice(0, 2).map((item: any) => (
-            <Badge key={item.id}>{item}</Badge>
-          ))}
-          {row.original.groups.length > 2 && (
-            <Badge>{`+ ${row.original.groups.length - 2} more`}</Badge>
-          )}
+        <div className="px-4">
+          {row.original.groups.map((group) => group.name).join(', ')}
         </div>
       )
     }
@@ -111,13 +105,8 @@ export const columns: ColumnDef<ChecklistsColumn>[] = [
     },
     cell: ({ row }) => {
       return (
-        <div className="flex flex-wrap gap-x-2 px-4">
-          {row.original.models.slice(0, 2).map((item: any) => (
-            <Badge key={item.id}>{item}</Badge>
-          ))}
-          {row.original.models.length > 2 && (
-            <Badge>{`+ ${row.original.models.length - 2} more`}</Badge>
-          )}
+        <div className="px-4">
+          {row.original.models.map((model) => model.name).join(', ')}
         </div>
       )
     }
@@ -137,13 +126,8 @@ export const columns: ColumnDef<ChecklistsColumn>[] = [
     },
     cell: ({ row }) => {
       return (
-        <div className="flex flex-wrap gap-2 px-4">
-          {row.original.points.slice(0, 2).map((point: any) => (
-            <Badge key={point.id}>{point.name}</Badge>
-          ))}
-          {row.original.points.length > 2 && (
-            <Badge>{`+ ${row.original.points.length - 2} more`}</Badge>
-          )}
+        <div className="px-4">
+          {row.original.points.map((point) => point.name).join(', ')}
         </div>
       )
     }

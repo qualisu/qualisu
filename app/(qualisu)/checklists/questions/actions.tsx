@@ -14,10 +14,6 @@ import { useState } from 'react'
 import { deleteCategory } from '@/features/parameters/categories/api/server-actions'
 import { useToast } from '@/components/ui/use-toast'
 import { AlertModal } from '@/components/alert-modal'
-import {
-  addQuestionToChecklist,
-  deleteQuestion
-} from '@/features/checklists/questions/api/server-actions'
 
 type Props = {
   id: string
@@ -33,7 +29,7 @@ export const Actions = ({ id }: Props) => {
     if (!id) return
     try {
       setLoading(true)
-      await deleteQuestion(id)
+      // await deleteQuestion(id)
       toast({
         variant: 'success',
         title: '🎉 Question deleted',
