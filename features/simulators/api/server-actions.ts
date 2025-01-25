@@ -2,7 +2,6 @@
 
 import { AnswerFormValues } from '@/app/(qualisu)/simulators/[id]/answer-form'
 import { db } from '@/lib/db'
-import { SimulatorStatus } from '@prisma/client'
 import { format } from 'date-fns'
 
 export const getChecklists = async ({
@@ -34,13 +33,13 @@ export const getChecklists = async ({
 
       // First find the vehicle with this vinCode
       const vehicle = await db.vehicles.findFirst({
-        where: { vinCode: vinCodePart },
+        where: { saseNo: vinCodePart },
         include: { models: true }
       })
 
       if (vehicle) {
         baseQuery.where.AND.push({
-          models: { some: { id: vehicle.modelsId } }
+          models: { some: { id: vehicle.models.id } }
         })
       }
     }

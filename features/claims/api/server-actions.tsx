@@ -1,33 +1,35 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { format } from 'date-fns'
 import { revalidatePath } from 'next/cache'
 
 export const getClaims = async () => {
   const claims = await db.claims.findMany({
-    orderBy: { claimDate: 'desc' }
+    orderBy: { claimDate: 'desc' },
+    include: {
+      failures: true
+    }
   })
 
   return claims
 }
 
 export async function createClaim(data: {
-  claimNumber: string
+  claimNo: string
   claimDate: Date
-  dealerNo: string
-  dealerName: string
   failureCode: string
-  claimType: string
-  vinNo: string
-  km: number
+  country: string
+  dealerName: string
+  vehicleGroup: string
+  vehicleModel: string
+  saseNo: string
+  kilometre: number
+  budgetNo: string
   amount: number
-  status: string
-  budget: number
 }) {
   try {
     const claim = await db.claims.create({
-      data: { ...data }
+      data: data
     })
 
     revalidatePath('/claims')

@@ -1,37 +1,46 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { FormStatus } from '@prisma/client'
-import { format } from 'date-fns'
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
+import * as XLSX from 'xlsx'
 
 interface Vehicle {
-  id?: string
-  name: string
-  shortCode: string
-  vinCode: string
-  status: FormStatus
-  images: string[]
-  modelsId: string
+  saseNo: string
+  warStart: Date
+  warEnd: Date
+  vehicleGroup: string
+  vehicleModel: string
+  prodDate: Date
+  country: string
+  checklistsId: string
 }
 
 // create
 export const createVehicle = async ({
-  id,
-  name,
-  shortCode,
-  vinCode,
-  status,
-  images,
-  modelsId
+  saseNo,
+  warStart,
+  warEnd,
+  vehicleGroup,
+  vehicleModel,
+  prodDate,
+  country
 }: Vehicle): Promise<any> => {
   try {
-    const existingVehicle = await getVehicleByName(name)
+    const existingVehicle = await getVehicleBysaseNo(saseNo)
 
-    if (id) {
+    if (existingVehicle) {
       return await db.vehicles.update({
-        where: { id },
-        data: { name, status, id, images, modelsId, shortCode, vinCode }
+        where: { saseNo },
+        data: {
+          saseNo,
+          warStart,
+          warEnd,
+          vehicleGroup,
+          vehicleModel,
+          prodDate,
+          country
+        }
       })
     }
 
@@ -39,36 +48,46 @@ export const createVehicle = async ({
       return new NextResponse('Vehicle already exists', { status: 400 })
     } else {
       return await db.vehicles.create({
-        data: { name, status, id, images, modelsId, shortCode, vinCode }
+        data: {
+          saseNo,
+          warStart,
+          warEnd,
+          vehicleGroup,
+          vehicleModel,
+          prodDate,
+          country
+        }
       })
     }
   } catch (error) {
-    return new NextResponse()
+    console.error('Error creating vehicle:', error)
+    return new NextResponse('Failed to create vehicle', { status: 500 })
   }
 }
-export const getVehicleByName = async (name: string) => {
+
+export const getVehicleBysaseNo = async (saseNo: string) => {
   return await db.vehicles.findUnique({
-    where: { name }
+    where: { saseNo }
   })
 }
 
-export const deleteVehicle = async (id: string) => {
+export const deleteVehicle = async (saseNo: string) => {
   try {
-    await db.vehicles.delete({ where: { id } })
+    await db.vehicles.delete({ where: { saseNo } })
+    revalidatePath('/parameters/vehicles')
   } catch (error) {
-    console.error(error)
-    return new NextResponse('Failed to delete vehicle', { status: 500 })
+    console.error('Error deleting vehicle:', error)
+    throw error
   }
 }
 
-export const getVehicleById = async (id: string) => {
+export const getVehicleById = async (saseNo: string) => {
   try {
     return await db.vehicles.findUnique({
-      where: { id },
-      include: { models: true }
+      where: { saseNo }
     })
   } catch (error) {
-    console.error(error)
+    console.error('Error fetching vehicle:', error)
     return null
   }
 }
@@ -76,28 +95,63 @@ export const getVehicleById = async (id: string) => {
 export const getVehicles = async () => {
   try {
     const vehicles = await db.vehicles.findMany({
-      include: { models: { include: { groups: true } } },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { warStart: 'desc' }
     })
 
-    const formattedVehicles = vehicles.map((item) => ({
-      id: item.id,
-      name: item.name,
-      shortCode: item.shortCode,
-      vinCode: item.vinCode,
-      modelId: item.modelsId,
-      groupId: item.models.groupsId,
-      images: item.images,
-      model: item.models.name,
-      group: item.models.groups.name,
-      status: item.status,
-      createdAt: format(item.createdAt, 'dd-MM-yyyy'),
-      updatedAt: format(item.updatedAt, 'dd-MM-yyyy')
-    }))
+    if (!vehicles) return []
 
-    return formattedVehicles
+    return vehicles.map((vehicle) => ({
+      saseNo: vehicle.saseNo,
+      warStart: vehicle.warStart,
+      warEnd: vehicle.warEnd,
+      vehicleGroup: vehicle.vehicleGroup,
+      vehicleModel: vehicle.vehicleModel,
+      prodDate: vehicle.prodDate,
+      country: vehicle.country
+    }))
   } catch (error) {
-    console.error(error)
-    return null
+    console.error('Error fetching vehicles:', error)
+    return []
+  }
+}
+
+export async function uploadVehicles(formData: FormData) {
+  try {
+    const file = formData.get('file') as File
+    const arrayBuffer = await file.arrayBuffer()
+    const workbook = XLSX.read(arrayBuffer)
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+    const data = XLSX.utils.sheet_to_json(worksheet)
+
+    const vehicles = data.map((row: any) => {
+      // Convert Excel serial numbers to JavaScript Date objects
+      const warStart = new Date(
+        Math.round((row.warStart - 25569) * 86400 * 1000)
+      )
+      const warEnd = new Date(Math.round((row.warEnd - 25569) * 86400 * 1000))
+      const prodDate = new Date(
+        Math.round((row.prodDate - 25569) * 86400 * 1000)
+      )
+
+      return {
+        saseNo: row.saseNo,
+        warStart,
+        warEnd,
+        vehicleGroup: row.vehicleGroup,
+        vehicleModel: row.vehicleModel,
+        prodDate,
+        country: row.country || 'TR' // Default to TR if not provided
+      }
+    })
+
+    await db.vehicles.createMany({
+      data: vehicles,
+      skipDuplicates: true
+    })
+
+    revalidatePath('/parameters/vehicles')
+  } catch (error) {
+    console.error('Error uploading vehicles:', error)
+    throw error
   }
 }

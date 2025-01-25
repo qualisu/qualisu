@@ -1,191 +1,279 @@
 'use client'
 
-import { format } from 'date-fns'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts'
-
+import { Claim } from '../columns'
+import { TimeSeriesChart } from './TimeSeriesChart'
+import { FailureCodesBarChart } from './FailureCodesBarChart'
+import { FailureFrequencyChart } from './FailureFrequencyChart'
+import { DealerBarChart } from './DealerBarChart'
+import { FailureFrequencyCountryChart } from './FailureFrequencyCountryChart'
+import { useClaimsData } from './hooks/useClaimsData'
+import { getFormattedDate } from './utils'
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-import { ChartConfig, ChartContainer } from '@/components/ui/chart'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { useState } from 'react'
-import { Claim } from '../columns'
 import { Button } from '@/components/ui/button'
+import { VehiclesColumn } from '../../parameters/vehicles/columns'
+import { useState, useEffect, useRef } from 'react'
+import { analyzeTrends, sendTrendNotification, TrendAnalysis } from './utils'
+import { toast } from 'sonner'
+import { toPng } from 'html-to-image'
 
 interface ClaimsAnalyticsProps {
   claims: Claim[]
+  vehicles: VehiclesColumn[]
 }
 
-const periods = [
-  { value: 'daily', label: 'Günlük' },
-  { value: 'monthly', label: 'Aylık' },
-  { value: 'yearly', label: 'Yıllık' }
-]
+export const ClaimsAnalytics = ({
+  claims = [],
+  vehicles = []
+}: ClaimsAnalyticsProps) => {
+  const [selectedFailureCode, setSelectedFailureCode] = useState<string | null>(
+    null
+  )
+  const [selectedModel, setSelectedModel] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const analyticsRef = useRef<HTMLDivElement>(null)
 
-export const ClaimsAnalytics = ({ claims = [] }: ClaimsAnalyticsProps) => {
-  const [period, setPeriod] = useState('monthly')
-  const [showOthers, setShowOthers] = useState(false)
+  const {
+    period,
+    timeData,
+    failureCodeData,
+    dealerData,
+    showOthers,
+    showDealerOthers,
+    activeFilters,
+    handlePeriodChange,
+    handleToggleOthers,
+    handleToggleDealerOthers,
+    handleItemClick
+  } = useClaimsData(claims)
 
-  const getFormattedDate = (date: Date) => {
-    if (!date) return ''
+  const handleTrendAnalysis = async () => {
+    if (!selectedFailureCode) {
+      toast.error('Lütfen bir arıza kodu seçin')
+      return
+    }
+
+    setIsAnalyzing(true)
     try {
-      switch (period) {
-        case 'daily':
-          return format(date, 'dd/MM/yyyy')
-        case 'monthly':
-          return format(date, 'MM/yyyy')
-        case 'yearly':
-          return format(date, 'yyyy')
-        default:
-          return format(date, 'MM/yyyy')
+      // Capture screenshot
+      let imageData = null
+      if (analyticsRef.current) {
+        try {
+          const dataUrl = await toPng(analyticsRef.current, {
+            quality: 0.95,
+            backgroundColor: 'white'
+          })
+          imageData = dataUrl
+        } catch (error) {
+          console.error('Screenshot alınamadı:', error)
+        }
+      }
+
+      const significantModels = failureFrequencyData
+        .filter((item) => item.frequency * 100 > 5)
+        .map((item) => ({
+          type: 'model' as const,
+          name: item.model,
+          increasePercentage: Math.round(item.frequency * 10000) / 100,
+          period: selectedFailureCode
+            ? `Failure Code: ${selectedFailureCode}`
+            : 'N/A',
+          additionalInfo: {
+            failureCount: item.failureCount,
+            vehicleCount: item.vehicleCount
+          }
+        }))
+
+      console.log('Trend Analizi Sonuçları:', {
+        significantModels,
+        rawData: {
+          failureFrequencyData,
+          selectedFailureCode
+        }
+      })
+
+      if (significantModels.length > 0) {
+        const mailData = {
+          subject: `Qualisu - Yüksek Arıza Oranı Bildirimi (${selectedFailureCode})`,
+          trends: significantModels.map((model) => ({
+            ...model,
+            message: `${model.name} modelinde ${model.additionalInfo.failureCount} adet arıza (${model.increasePercentage}%) tespit edildi. Toplam araç sayısı: ${model.additionalInfo.vehicleCount}`
+          })),
+          imageData // Add screenshot data to the request
+        }
+
+        console.log('Mail gönderilecek:', mailData)
+        const response = await fetch('/api/notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(mailData)
+        })
+
+        if (!response.ok) {
+          throw new Error('Mail gönderimi başarısız oldu')
+        }
+
+        const result = await response.json()
+        console.log('Mail gönderim sonucu:', result)
+        toast.success('Trend analizi raporu mail olarak gönderildi')
+      } else {
+        toast.info(
+          'Kritik seviyede (%5 üzeri) arıza oranı olan model bulunamadı'
+        )
       }
     } catch (error) {
-      return ''
+      console.error('Trend bildirimi gönderilemedi:', error)
+      toast.error('Trend bildirimi gönderilemedi')
+    } finally {
+      setIsAnalyzing(false)
     }
   }
 
-  const [selectedDate, setSelectedDate] = useState<string>(
-    getFormattedDate(new Date())
-  )
-
-  const claimTypeData = (claims || []).reduce((acc: any[], claim) => {
-    if (!claim?.claimType) return acc
-    const existingType = acc.find((item) => item.type === claim.claimType)
-    if (existingType) {
-      existingType.value += 1
-    } else {
-      acc.push({ type: claim.claimType, value: 1 })
+  // Update handleItemClick to set selectedDate
+  const handleChartItemClick = (
+    type: 'date' | 'failureCode' | 'dealer',
+    value: string
+  ) => {
+    if (type === 'date') {
+      setSelectedDate(value)
     }
-    return acc
-  }, [])
+    handleItemClick(type, value)
+  }
 
-  const failureCodeData = (claims || [])
-    .reduce((acc: any[], claim) => {
-      if (!claim?.failureCode || !claim?.amount || !claim?.claimDate) return acc
+  // Calculate failure frequencies when a failure code is selected
+  const failureFrequencyData = selectedFailureCode
+    ? (() => {
+        // Count vehicles by model that are within warranty period for the selected date
+        const vehiclesByModel = vehicles.reduce(
+          (acc: { [key: string]: Set<string> }, vehicle) => {
+            // Check if the vehicle is within warranty period for the selected date
+            if (selectedDate && activeFilters.date) {
+              const date = new Date(activeFilters.date)
+              const warStart = vehicle.warStart
+                ? new Date(vehicle.warStart)
+                : null
+              const warEnd = vehicle.warEnd ? new Date(vehicle.warEnd) : null
 
-      const claimDate = new Date(claim.claimDate)
-      const timeKey = getFormattedDate(claimDate)
-      if (!timeKey) return acc
+              if (warStart && warEnd && date >= warStart && date <= warEnd) {
+                // Use vehicle model as key but count unique VINs
+                const model = vehicle.vehicleModel
+                if (!acc[model]) {
+                  acc[model] = new Set()
+                }
+                acc[model].add(vehicle.saseNo)
+              }
+            } else {
+              // Use vehicle model as key but count unique VINs
+              const model = vehicle.vehicleModel
+              if (!acc[model]) {
+                acc[model] = new Set()
+              }
+              acc[model].add(vehicle.saseNo)
+            }
+            return acc
+          },
+          {} as { [key: string]: Set<string> }
+        )
 
-      const existingCode = acc.find((item) => item.type === claim.failureCode)
-      if (existingCode) {
-        existingCode.value += Number(claim.amount.toFixed(2))
-      } else {
-        acc.push({
-          type: claim.failureCode,
-          value: Number(claim.amount.toFixed(2)),
-          period: timeKey
-        })
-      }
-      return acc
-    }, [])
-    .filter((item) => item.period === selectedDate)
-    .sort((a, b) => b.value - a.value)
-    .reduce((acc: any[], item, index) => {
-      if (!showOthers) {
-        if (index < 10) {
-          acc.push(item)
-        } else if (acc.length === 10) {
-          acc.push({ type: 'Others', value: item.value })
-        } else {
-          acc[10].value += item.value
-        }
-      } else {
-        if (index >= 10) {
-          acc.push(item)
-        }
-      }
-      return acc
-    }, [])
+        // Convert Sets to counts
+        const vehicleCounts = Object.fromEntries(
+          Object.entries(vehiclesByModel).map(([model, vins]) => [
+            model,
+            vins.size
+          ])
+        )
 
-  const barChartConfig = {
-    amount: {
-      label: 'Amount',
-      color: 'hsl(var(--chart-1))'
-    }
-  } satisfies ChartConfig
+        // Count claims by model for the selected failure code and date
+        const claimsByModel = claims
+          .filter((claim) => {
+            const matchesFailureCode = claim.failureCode === selectedFailureCode
+            const matchesDate =
+              selectedDate && activeFilters.date
+                ? getFormattedDate(new Date(claim.claimDate), period) ===
+                  activeFilters.date
+                : true
 
-  const failureCodeChartConfig = failureCodeData.reduce(
-    (config: any, item, index) => {
-      config[item.type] = {
-        label: item.type,
-        color: 'hsl(var(--chart-2))'
-      }
-      return config
-    },
-    {}
-  )
+            return matchesFailureCode && matchesDate
+          })
+          .reduce((acc: { [key: string]: number }, claim) => {
+            if (claim.vehicleModel) {
+              acc[claim.vehicleModel] = (acc[claim.vehicleModel] || 0) + 1
+            }
+            return acc
+          }, {})
 
-  const chartConfig: ChartConfig = claimTypeData.reduce(
-    (config: any, claim, index) => {
-      const hue = (index * 60) % 360
-      config[claim.type] = {
-        label: claim.type,
-        color: `hsl(${hue}, 70%, 50%)`
-      }
-      return config
-    },
-    {}
-  )
+        // Calculate frequencies and filter out zero frequencies
+        return Object.entries(vehicleCounts)
+          .map(([model, vehicleCount]) => ({
+            model,
+            frequency: (claimsByModel[model] || 0) / vehicleCount,
+            failureCount: claimsByModel[model] || 0,
+            vehicleCount
+          }))
+          .filter((item) => item.frequency > 0)
+          .sort((a, b) => b.frequency - a.frequency)
+      })()
+    : []
 
-  const timeData = (claims || [])
-    .reduce((acc: any[], claim) => {
-      if (!claim?.claimDate || !claim?.amount) return acc
-      const timeKey = getFormattedDate(new Date(claim.claimDate))
-      if (!timeKey) return acc
-      const existingTime = acc.find((item) => item.time === timeKey)
-      if (existingTime) {
-        existingTime.amount += claim.amount
-      } else {
-        acc.push({ time: timeKey, amount: claim.amount })
-      }
-      return acc
-    }, [])
-    .sort((a, b) => {
-      const parseDate = (str: string) => {
-        if (!str) return new Date()
-        const parts = str.split('/')
-        try {
-          switch (period) {
-            case 'daily':
-              return new Date(
-                Number(parts[2]),
-                Number(parts[1]) - 1,
-                Number(parts[0])
+  // Calculate country-based failure frequencies when a failure code is selected
+  const countryFailureFrequencyData = selectedFailureCode
+    ? (() => {
+        // Get filtered claims based on selected model
+        const filteredClaims = selectedModel
+          ? claims.filter((claim) => claim.vehicleModel === selectedModel)
+          : claims
+
+        // Get unique countries from filtered claims
+        const countries = Array.from(
+          new Set(filteredClaims.map((claim) => claim.country))
+        )
+
+        // Calculate frequencies for each country
+        const countryData = countries
+          .map((country) => {
+            // Get all unique VINs for this country from claims
+            const countryVins = Array.from(
+              new Set(
+                claims
+                  .filter(
+                    (claim) =>
+                      claim.country === country &&
+                      (!selectedModel || claim.vehicleModel === selectedModel)
+                  )
+                  .map((claim) => claim.saseNo)
               )
-            case 'monthly':
-              return new Date(Number(parts[1]), Number(parts[0]) - 1)
-            case 'yearly':
-              return new Date(Number(parts[0]), 0)
-            default:
-              return new Date(Number(parts[1]), Number(parts[0]) - 1)
-          }
-        } catch (error) {
-          return new Date()
-        }
-      }
-      return parseDate(a.time).getTime() - parseDate(b.time).getTime()
-    })
+            )
+
+            // Get failure code claims for this country
+            const failureClaims = filteredClaims.filter(
+              (claim) =>
+                claim.country === country &&
+                claim.failureCode === selectedFailureCode
+            )
+
+            const vehicleCount = countryVins.length
+            const failureCount = failureClaims.length
+
+            return {
+              country,
+              frequency: failureCount / vehicleCount,
+              failureCount,
+              vehicleCount
+            }
+          })
+          .filter((item) => item.frequency > 0)
+          .sort((a, b) => b.frequency - a.frequency)
+
+        return countryData
+      })()
+    : []
 
   if (!claims?.length) {
     return (
@@ -207,169 +295,53 @@ export const ClaimsAnalytics = ({ claims = [] }: ClaimsAnalyticsProps) => {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>
-              Claims By {periods.find((p) => p.value === period)?.label}
-            </CardTitle>
-            <CardDescription>
-              Total amount by {periods.find((p) => p.value === period)?.label}
-            </CardDescription>
-          </div>
-          <Select
-            value={period}
-            onValueChange={(value) => {
-              setPeriod(value)
-              setSelectedDate(getFormattedDate(new Date()))
-            }}
-          >
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Select period" />
-            </SelectTrigger>
-            <SelectContent>
-              {periods.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardHeader>
-
-        <CardContent>
-          <ChartContainer config={barChartConfig}>
-            <BarChart
-              data={timeData}
-              onClick={(data) => {
-                if (data?.activeLabel) {
-                  setSelectedDate(data.activeLabel)
-                }
-              }}
-            >
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="time"
-                tickLine={false}
-                tickMargin={10}
-                axisLine={false}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tickMargin={10}
-                tickFormatter={(value) => value.toLocaleString('tr-TR')}
-              />
-              <Tooltip
-                formatter={(value: number) => [
-                  value.toLocaleString('tr-TR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  }),
-                  'Amount'
-                ]}
-              />
-              <Bar dataKey="amount" fill="var(--color-amount)" radius={8} />
-            </BarChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      <Card className="flex flex-col">
-        <CardHeader className="items-center pb-0">
-          <CardTitle>Claim Types</CardTitle>
-          <CardDescription>Distribution by type</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-1 pb-0">
-          <ChartContainer
-            config={chartConfig}
-            className="mx-auto aspect-square max-h-[300px] pb-0 [&_.recharts-pie-label-text]:fill-foreground"
-          >
-            <PieChart>
-              <Tooltip />
-              <Pie
-                data={claimTypeData}
-                dataKey="value"
-                nameKey="type"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label={(entry) => entry.type}
-              >
-                {claimTypeData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={chartConfig[entry.type].color}
-                  />
-                ))}
-              </Pie>
-            </PieChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Failure Codes</CardTitle>
-            <CardDescription>Distribution by failure code</CardDescription>
-          </div>
-          {showOthers && (
-            <Button
-              onClick={() => setShowOthers(false)}
-              variant="outline"
-              size="sm"
-            >
-              Clear
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={failureCodeChartConfig}>
-            <BarChart
-              accessibilityLayer
-              data={failureCodeData}
-              layout="vertical"
-              margin={{ left: 120 }}
-              onClick={(data) => {
-                if (data?.activePayload?.[0]?.payload?.type === 'Others') {
-                  setShowOthers(true)
-                }
-              }}
-            >
-              <YAxis
-                dataKey="type"
-                type="category"
-                tickLine={false}
-                tickMargin={10}
-                axisLine={false}
-              />
-              <XAxis
-                type="number"
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(value) =>
-                  value.toLocaleString('tr-TR', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                  })
-                }
-              />
-              <Tooltip
-                formatter={(value: number) => [
-                  value.toLocaleString('tr-TR', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                  }),
-                  'Amount'
-                ]}
-              />
-              <Bar dataKey="value" fill="hsl(var(--chart-2))" radius={8} />
-            </BarChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
+    <div className="space-y-4" ref={analyticsRef}>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Claims Analytics</h2>
+        <Button
+          onClick={handleTrendAnalysis}
+          variant="outline"
+          disabled={isAnalyzing || !selectedFailureCode}
+        >
+          {isAnalyzing ? 'Analiz Yapılıyor...' : 'Trend Analizi Yap'}
+        </Button>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3">
+        <TimeSeriesChart
+          data={timeData}
+          period={period}
+          activeFilters={activeFilters}
+          onPeriodChange={handlePeriodChange}
+          onItemClick={handleChartItemClick}
+        />
+        {/* <WarrantyVehiclesChart vehicles={vehicles} selectedDate={selectedDate} /> */}
+        <FailureCodesBarChart
+          data={failureCodeData}
+          showOthers={showOthers}
+          activeFilters={activeFilters}
+          onToggleOthers={handleToggleOthers}
+          onItemClick={handleItemClick}
+          onFailureCodeSelect={setSelectedFailureCode}
+        />
+        <FailureFrequencyChart
+          data={failureFrequencyData}
+          selectedFailureCode={selectedFailureCode}
+          selectedDate={selectedDate}
+          onModelSelect={setSelectedModel}
+        />
+        <FailureFrequencyCountryChart
+          data={countryFailureFrequencyData}
+          selectedFailureCode={selectedFailureCode}
+          selectedModel={selectedModel}
+        />
+        <DealerBarChart
+          data={dealerData}
+          showOthers={showDealerOthers}
+          activeFilters={activeFilters}
+          onToggleOthers={handleToggleDealerOthers}
+          onItemClick={handleItemClick}
+        />
+      </div>
     </div>
   )
 }

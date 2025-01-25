@@ -14,7 +14,8 @@ import {
   getFilteredRowModel,
   VisibilityState,
   getFacetedRowModel,
-  getFacetedUniqueValues
+  getFacetedUniqueValues,
+  Table as TableInstance
 } from '@tanstack/react-table'
 
 import {
@@ -25,7 +26,6 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
-import { DataTableToolbar } from './data-table-toolbar'
 import { DataTablePagination } from './data-table-pagination'
 
 interface DataTableProps<TData, TValue> {
@@ -36,6 +36,12 @@ interface DataTableProps<TData, TValue> {
   isAdd: boolean
   onAdd?: () => void
   meta?: Record<string, unknown>
+  toolbar?: React.ComponentType<{
+    table: TableInstance<TData>
+    filterKey: string
+    isAdd: boolean
+    onAdd?: () => void
+  }>
 }
 
 export function DataTable<TData, TValue>({
@@ -44,7 +50,8 @@ export function DataTable<TData, TValue>({
   filterKey,
   isAdd,
   onAdd,
-  meta
+  meta,
+  toolbar: Toolbar
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -76,12 +83,14 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar<TData>
-        table={table}
-        filterKey={filterKey}
-        isAdd={isAdd}
-        onAdd={onAdd}
-      />
+      {Toolbar && (
+        <Toolbar
+          table={table}
+          filterKey={filterKey}
+          isAdd={isAdd}
+          onAdd={onAdd}
+        />
+      )}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -132,7 +141,9 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+      <div className="flex items-center justify-between space-x-2">
+        <DataTablePagination table={table} />
+      </div>
     </div>
   )
 }

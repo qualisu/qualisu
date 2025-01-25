@@ -11,18 +11,16 @@ export const getFailureByCode = async (code: string) => {
   })
 }
 
-export const getFailureById = async (id: string) => {
+export const getFailureById = async (code: string) => {
   const res = await db.failures.findUnique({
-    where: { id }
+    where: { code }
   })
 
   const formattedData = {
-    id: res?.id,
     code: res?.code,
-    name: res?.name,
-    status: res?.status,
-    createdAt: format(res?.createdAt ?? new Date(), 'dd-MM-yyyy'),
-    updatedAt: format(res?.updatedAt ?? new Date(), 'dd-MM-yyyy')
+    descEng: res?.descEng,
+    descTurk: res?.descTurk,
+    status: res?.status
   }
 
   return formattedData
@@ -31,16 +29,14 @@ export const getFailureById = async (id: string) => {
 export const getFailures = async () => {
   try {
     const res = await db.failures.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { code: 'asc' }
     })
 
     const formattedData: FailuresColumn[] = res.map((item) => ({
-      id: item.id,
       code: item.code,
-      name: item.name,
-      status: item.status,
-      createdAt: format(item.createdAt, 'dd-MM-yyyy'),
-      updatedAt: format(item.updatedAt, 'dd-MM-yyyy')
+      descEng: item.descEng,
+      descTurk: item.descTurk,
+      status: item.status
     }))
 
     return formattedData
@@ -52,24 +48,24 @@ export const getFailures = async () => {
 
 export const createFailure = async ({
   code,
-  name,
-  status,
-  id
+  descEng,
+  descTurk,
+  status
 }: FailuresColumn): Promise<any> => {
   try {
     const existingFailure = await getFailureByCode(code)
 
-    if (id) {
+    if (code) {
       return await db.failures.update({
-        where: { id },
-        data: { code, name, status }
+        where: { code },
+        data: { code, descEng, descTurk, status }
       })
     } else {
       if (existingFailure) {
         return new NextResponse('Failure already exists', { status: 400 })
       } else {
         return await db.failures.create({
-          data: { code, name, status }
+          data: { code, descEng, descTurk, status }
         })
       }
     }
@@ -78,10 +74,10 @@ export const createFailure = async ({
   }
 }
 
-export const deleteFailure = async (id: string) => {
+export const deleteFailure = async (code: string) => {
   try {
     await db.failures.delete({
-      where: { id }
+      where: { code }
     })
   } catch (error) {
     console.error(error)
@@ -89,10 +85,10 @@ export const deleteFailure = async (id: string) => {
   }
 }
 
-export const deleteFailures = async (ids: string[]) => {
+export const deleteFailures = async (codes: string[]) => {
   try {
     await db.failures.deleteMany({
-      where: { id: { in: ids } }
+      where: { code: { in: codes } }
     })
   } catch (error) {
     console.error(error)

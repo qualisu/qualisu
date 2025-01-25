@@ -38,11 +38,11 @@ const FailuresClient = ({ data, id }: FailuresClientProps) => {
           Add New
         </Button>
       </div>
-      <DataTable
+      <DataTable<FailuresColumn, unknown>
         columns={columns}
         data={data}
         filterKey="code"
-        onDelete={handleDelete}
+        isAdd={true}
       />
     </div>
   )

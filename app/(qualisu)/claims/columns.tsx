@@ -15,20 +15,21 @@ import {
 import { format } from 'date-fns'
 
 export type Claim = {
-  id: string
-  claimNumber: string
+  claimNo: string
   claimDate: Date
-  dealerNo: string
-  dealerName: string
   failureCode: string
-  claimType: string
-  vinNo: string
-  km: number
+  country: string
+  dealerName: string
+  vehicleGroup: string
+  vehicleModel: string
+  saseNo: string
+  kilometre: number
+  budgetNo: string
   amount: number
-  status: string
-  budget: number
-  createdAt: Date
-  updatedAt: Date
+  failures?: {
+    descEng?: string
+    descTurk?: string
+  }
 }
 
 export const columns: ColumnDef<Claim>[] = [
@@ -55,7 +56,7 @@ export const columns: ColumnDef<Claim>[] = [
     enableHiding: false
   },
   {
-    accessorKey: 'claimNumber',
+    accessorKey: 'claimNo',
     header: ({ column }) => {
       return (
         <Button
@@ -68,7 +69,10 @@ export const columns: ColumnDef<Claim>[] = [
       )
     },
     cell: ({ row }) => {
-      return <p className="px-4">{row.original.claimNumber}</p>
+      return <p className="px-4">{row.original.claimNo}</p>
+    },
+    filterFn: (row, id, value: string[]) => {
+      return value.includes(row.getValue(id))
     }
   },
   {
@@ -85,23 +89,6 @@ export const columns: ColumnDef<Claim>[] = [
       )
     },
     cell: ({ row }) => format(new Date(row.getValue('claimDate')), 'dd/MM/yyyy')
-  },
-  {
-    accessorKey: 'dealerNo',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Dealer No
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      return <p className="px-4">{row.original.dealerNo}</p>
-    }
   },
   {
     accessorKey: 'dealerName',
@@ -131,6 +118,9 @@ export const columns: ColumnDef<Claim>[] = [
           </Tooltip>
         </TooltipProvider>
       )
+    },
+    filterFn: (row, id, value: string[]) => {
+      return value.includes(row.getValue(id))
     }
   },
   {
@@ -148,27 +138,13 @@ export const columns: ColumnDef<Claim>[] = [
     },
     cell: ({ row }) => {
       return <p className="px-4">{row.original.failureCode}</p>
-    }
-  },
-  {
-    accessorKey: 'claimType',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Claim Type
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
     },
-    cell: ({ row }) => {
-      return <p className="px-4">{row.original.claimType}</p>
+    filterFn: (row, id, value: string[]) => {
+      return value.includes(row.getValue(id))
     }
   },
   {
-    accessorKey: 'vinNo',
+    accessorKey: 'saseNo',
     header: ({ column }) => {
       return (
         <Button
@@ -181,7 +157,10 @@ export const columns: ColumnDef<Claim>[] = [
       )
     },
     cell: ({ row }) => {
-      return <p className="px-4">{row.original.vinNo}</p>
+      return <p className="px-4">{row.original.saseNo}</p>
+    },
+    filterFn: (row, id, value: string[]) => {
+      return value.includes(row.getValue(id))
     }
   },
   {
@@ -198,7 +177,9 @@ export const columns: ColumnDef<Claim>[] = [
       )
     },
     cell: ({ row }) => {
-      return <p className="px-4">{row.original.km.toLocaleString('tr-TR')}</p>
+      return (
+        <p className="px-4">{row.original.kilometre.toLocaleString('tr-TR')}</p>
+      )
     }
   },
   {
@@ -221,39 +202,5 @@ export const columns: ColumnDef<Claim>[] = [
         </Badge>
       )
     }
-  },
-  {
-    accessorKey: 'status',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Status
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Badge className="capitalize" variant="secondary">
-                {truncate(row.original.status, 10)}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{row.original.status}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )
-    }
-  },
-  {
-    accessorKey: 'budget',
-    header: 'Budget'
   }
 ]

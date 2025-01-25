@@ -1,26 +1,20 @@
 'use client'
 
 import { ColumnDef } from '@tanstack/react-table'
-import { ArrowUpDown } from 'lucide-react'
-
-import { FormStatus } from '@prisma/client'
-import { Button } from '@/components/ui/button'
+import { format } from 'date-fns'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Actions } from './actions'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { DataTableColumnHeader } from '@/components/data-table-column-header'
 
 export type VehiclesColumn = {
   id: string
-  name: string
-  shortCode: string
-  vinCode: string
-  model: string
-  group: string
-  images: string[]
-  status: FormStatus
-  createdAt: Date
-  updatedAt: Date
+  saseNo: string
+  warStart: Date
+  warEnd: Date
+  vehicleGroup: string
+  vehicleModel: string
+  prodDate: Date
+  country: string
 }
 
 export const columns: ColumnDef<VehiclesColumn>[] = [
@@ -47,99 +41,49 @@ export const columns: ColumnDef<VehiclesColumn>[] = [
     enableHiding: false
   },
   {
-    accessorKey: 'model',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Model
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      return <div className="px-4">{row.original.model}</div>
-    }
+    accessorKey: 'saseNo',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="VIN No" />
+    )
   },
   {
-    accessorKey: 'name',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Vehicle
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      return <div className="px-4">{row.original.name}</div>
-    }
+    accessorKey: 'vehicleGroup',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Vehicle Group" />
+    )
   },
   {
-    accessorKey: 'vinCode',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          VIN Code
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      return <div className="px-4">{row.original.vinCode}</div>
-    }
+    accessorKey: 'vehicleModel',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Vehicle Model" />
+    )
   },
   {
-    accessorKey: 'shortCode',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Short Code
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      return <div className="px-4">{row.original.shortCode}</div>
-    }
+    accessorKey: 'prodDate',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Production Date" />
+    ),
+    cell: ({ row }) => format(new Date(row.getValue('prodDate')), 'dd/MM/yyyy')
   },
   {
-    accessorKey: 'status',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Status
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      return (
-        <Badge
-          className={cn(
-            row.original.status === FormStatus.Active
-              ? 'bg-green-600'
-              : 'bg-red-600'
-          )}
-        >
-          {row.original.status}
-        </Badge>
-      )
-    }
+    accessorKey: 'country',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Country" />
+    )
+  },
+  {
+    accessorKey: 'warStart',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Warranty Start" />
+    ),
+    cell: ({ row }) => format(new Date(row.getValue('warStart')), 'dd/MM/yyyy')
+  },
+  {
+    accessorKey: 'warEnd',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Warranty End" />
+    ),
+    cell: ({ row }) => format(new Date(row.getValue('warEnd')), 'dd/MM/yyyy')
   },
   {
     id: 'actions',

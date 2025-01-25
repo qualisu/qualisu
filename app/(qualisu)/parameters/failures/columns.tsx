@@ -11,12 +11,10 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 export type FailuresColumn = {
-  id: string
   code: string
-  name: string
+  descEng: string
+  descTurk: string
   status: FormStatus
-  createdAt: string
-  updatedAt: string
 }
 
 export const columns: ColumnDef<FailuresColumn>[] = [
@@ -57,14 +55,28 @@ export const columns: ColumnDef<FailuresColumn>[] = [
     }
   },
   {
-    accessorKey: 'name',
+    accessorKey: 'descEng',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Name
+          Description (English)
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    }
+  },
+  {
+    accessorKey: 'descTurk',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Description (Turkish)
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
@@ -99,17 +111,8 @@ export const columns: ColumnDef<FailuresColumn>[] = [
     }
   },
   {
-    accessorKey: 'createdAt',
-    header: 'Created Date'
-  },
-  {
-    accessorKey: 'updatedAt',
-    header: 'Updated Date'
-  },
-
-  {
     id: 'actions',
     header: 'Actions',
-    cell: ({ row }) => <Actions id={row.original.id} />
+    cell: ({ row }) => <Actions code={row.original.code} />
   }
 ]

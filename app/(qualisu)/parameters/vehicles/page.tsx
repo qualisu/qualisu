@@ -1,11 +1,14 @@
-import { VehiclesColumn } from '@/app/(qualisu)/parameters/vehicles/columns'
+import VehiclesClient from './client'
 import { getVehicles } from '@/features/parameters/vehicles/api/server-actions'
-import VehicleClient from './client'
 
 const VehiclesPage = async () => {
-  const data = await getVehicles()
+  const vehicles = await getVehicles()
 
-  return <VehicleClient data={data as unknown as VehiclesColumn[]} />
+  return (
+    <div className="h-full">
+      <VehiclesClient vehicles={vehicles as any} />
+    </div>
+  )
 }
 
 export default VehiclesPage

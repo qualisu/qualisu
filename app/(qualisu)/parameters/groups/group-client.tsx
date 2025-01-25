@@ -41,11 +41,11 @@ const GroupClient = ({ data, id }: GroupClientProps) => {
           Add New
         </Button>
       </div>
-      <DataTable
+      <DataTable<GroupsColumn, any>
         columns={columns}
         data={data}
         filterKey="name"
-        onDelete={handleDelete}
+        isAdd={false}
       />
     </div>
   )

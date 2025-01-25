@@ -12,10 +12,10 @@ import {
 import { Button } from '@/components/ui/button'
 
 type Props = {
-  id: string
+  code: string
 }
 
-export const Actions = ({ id }: Props) => {
+export const Actions = ({ code }: Props) => {
   const router = useRouter()
 
   return (
@@ -29,7 +29,9 @@ export const Actions = ({ id }: Props) => {
 
         <DropdownMenuContent align="end">
           <DropdownMenuItem
-            onClick={() => router.push(`/parameters/failures/create?id=${id}`)}
+            onClick={() =>
+              router.push(`/parameters/failures/create?code=${code}`)
+            }
           >
             <Edit className="size-4 mr-2" />
             Edit
