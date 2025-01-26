@@ -94,7 +94,6 @@ export const columns: ColumnDef<CategoriesColumn>[] = [
     accessorKey: 'updatedAt',
     header: 'Updated Date'
   },
-
   {
     id: 'actions',
     header: 'Actions',

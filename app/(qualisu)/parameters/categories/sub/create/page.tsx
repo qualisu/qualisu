@@ -16,10 +16,6 @@ export default async function SubCreatePage({ searchParams }: Props) {
   const failures = await getFailures()
   const categories = await getCategories()
 
-  if (!subCategory) {
-    return <div>No data found</div>
-  }
-
   // Convert to plain objects
   const initialData = JSON.parse(JSON.stringify(subCategory))
   const failuresData = JSON.parse(JSON.stringify(failures))

@@ -10,10 +10,6 @@ const CategoriesPage = async () => {
   const categories = await getCategories()
   const subCategories = await getSubCategories()
 
-  if (!categories || !subCategories) {
-    return <div>No data found</div>
-  }
-
   return (
     <CategoriesClient
       categories={categories as CategoriesColumn[]}

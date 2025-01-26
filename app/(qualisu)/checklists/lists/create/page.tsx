@@ -1,7 +1,7 @@
 import {
   getChecklistById,
   getQuestions
-} from '@/features/checklists/questions/api/server-actions'
+} from '@/features/questions/api/server-actions'
 import ChecklistForm from '@/features/checklists/questions/components/checklist-form'
 import { getDealers } from '@/features/parameters/dealers/api/server-actions'
 import { getGroups } from '@/features/parameters/groups/api/server-actions'

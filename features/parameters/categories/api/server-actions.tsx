@@ -87,7 +87,7 @@ export const getCategories = async () => {
 export const getSubCategories = async () => {
   try {
     const res = await db.failureSubCategory.findMany({
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { mainCategory: { name: 'asc' } },
       include: { failureCodes: true, mainCategory: true }
     })
 

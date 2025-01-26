@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
 import Heading from '@/components/heading'
-import { BadgeAlert, Group, Trash } from 'lucide-react'
+import { BadgeAlert, Trash } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { AlertModal } from '@/components/alert-modal'
 import { useState } from 'react'
@@ -202,7 +202,7 @@ export default function CategoryForm({ id, initialData }: Props) {
                 type="submit"
                 disabled={!isValid || isSubmitting}
               >
-                Save
+                {id ? 'Update' : 'Create'}
               </Button>
             </div>
           </form>

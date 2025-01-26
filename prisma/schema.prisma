@@ -60,11 +60,11 @@ model User {
 }
 
 model UserGroups {
-  id     String   @id @default(cuid())
-  name   String   @unique @db.Text
+  id     String           @id @default(cuid())
+  name   String           @unique @db.Text
   users  User[]
   points Points[]
-  types  cTypes[] @default([])
+  types  ChecklistTypes[] @default([])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -148,7 +148,7 @@ enum AnswerType {
   Numeric
 }
 
-enum cTypes {
+enum ChecklistTypes {
   STANDART
   ZOBAS
   REGULATION
@@ -163,7 +163,6 @@ enum cTypes {
 }
 
 // Parameters
-
 model VehicleGroup {
   id         String         @id @default(cuid())
   name       String         @unique
@@ -194,6 +193,23 @@ model VehicleModel {
   groups VehicleGroup @relation(fields: [vehicleGroupId], references: [id], onDelete: Cascade)
 
   @@index([vehicleGroupId])
+}
+
+model Vehicles {
+  saseNo         String       @id @unique
+  warStart       DateTime
+  country        String
+  warEnd         DateTime
+  vehicleGroupId String
+  vehicleModelId String
+  prodDate       DateTime
+  checklists     Checklists[]
+
+  groups VehicleGroup @relation(fields: [vehicleGroupId], references: [id])
+  models VehicleModel @relation(fields: [vehicleModelId], references: [id])
+
+  @@index([vehicleGroupId])
+  @@index([vehicleModelId])
 }
 
 model Points {
@@ -229,8 +245,9 @@ model FailureSubCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  mainCategory FailureCategory @relation(fields: [mainCategoryId], references: [id], onDelete: Cascade)
-  reports      Report[]        @relation("ReportSubCategory")
+  mainCategory    FailureCategory   @relation(fields: [mainCategoryId], references: [id], onDelete: Cascade)
+  reports         Report[]          @relation("ReportSubCategory")
+  QuestionCatalog QuestionCatalog[]
 
   @@unique([name, mainCategoryId])
   @@index([mainCategoryId])
@@ -245,27 +262,16 @@ model FailureCodes {
   status        FormStatus           @default(Active)
 }
 
-// Question Catalog
-model QuestionCatalog {
-  id String @id @default(cuid())
+model Dealers {
+  id           String  @id @default(cuid())
+  name         String
+  code         String  @unique
+  checklistsId String?
+  // claims       Claims[]
 
-  name     String
-  desc     String?
-  type     cTypes           @default(STANDART)
-  grade    QuestionGrade    @default(B)
-  tag      Tags[]
-  images   String[]
-  docs     String[]
-  version  Int              @default(1)
-  isLatest Boolean          @default(true)
-  prevId   String?          @unique // Reference to previous version
-  prev     QuestionCatalog? @relation("Versions", fields: [prevId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  next     QuestionCatalog? @relation("Versions")
+  checklists Checklists? @relation(fields: [checklistsId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@index([prevId])
+  @@index([checklistsId])
 }
 
 model Tags {
@@ -281,11 +287,58 @@ model Tags {
   @@index([qCatId])
 }
 
+// Question Catalog
+model QuestionCatalog {
+  id            String             @id @default(cuid())
+  name          String
+  desc          String?
+  type          ChecklistTypes     @default(STANDART)
+  grade         QuestionGrade      @default(C)
+  subCategoryId String
+  tags          Tags[]
+  images        String[]
+  docs          String[]
+  version       Int                @default(1)
+  isLatest      Boolean            @default(true)
+  prevId        String?            @unique
+  subCategory   FailureSubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  prev          QuestionCatalog?   @relation("Versions", fields: [prevId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  next          QuestionCatalog?   @relation("Versions")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([prevId])
+}
+
+model cQuestions {
+  id String @id @default(cuid())
+
+  name   String
+  desc   String?
+  type   ChecklistTypes @default(STANDART)
+  grade  QuestionGrade  @default(B)
+  images String[]
+  docs   String[]
+
+  checklistId String
+
+  qCatalogId  String? // Reference to original qCatalog for tracking
+  qCatalogVer Int     @default(1) // Version of qCatalog when added
+
+  checklist Checklists @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([checklistId])
+}
+
 // Checklists
 model Checklists {
   id String @id @default(cuid())
 
-  type      cTypes         @default(STANDART)
+  type      ChecklistTypes @default(STANDART)
   name      String         @unique
   desc      String?
   userId    String?
@@ -305,41 +358,7 @@ model Checklists {
   @@index([userId])
 }
 
-model cQuestions {
-  id String @id @default(cuid())
-
-  name   String
-  desc   String?
-  type   cTypes        @default(STANDART)
-  grade  QuestionGrade @default(B)
-  images String[]
-  docs   String[]
-
-  checklistId String
-
-  qCatalogId  String? // Reference to original qCatalog for tracking
-  qCatalogVer Int     @default(1) // Version of qCatalog when added
-
-  checklist Checklists @relation(fields: [checklistId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@index([checklistId])
-}
-
-model Dealers {
-  id           String  @id @default(cuid())
-  name         String
-  code         String  @unique
-  checklistsId String?
-  // claims       Claims[]
-
-  checklists Checklists? @relation(fields: [checklistsId], references: [id], onDelete: Cascade)
-
-  @@index([checklistsId])
-}
-
+// Claims
 model Claims {
   claimNo        String   @unique
   claimDate      DateTime
@@ -361,23 +380,7 @@ model Claims {
   @@index([vehicleGroupId])
 }
 
-model Vehicles {
-  saseNo         String       @id @unique
-  warStart       DateTime
-  country        String
-  warEnd         DateTime
-  vehicleGroupId String
-  vehicleModelId String
-  prodDate       DateTime
-  checklists     Checklists[]
-
-  groups VehicleGroup @relation(fields: [vehicleGroupId], references: [id])
-  models VehicleModel @relation(fields: [vehicleModelId], references: [id])
-
-  @@index([vehicleGroupId])
-  @@index([vehicleModelId])
-}
-
+// Reports
 model Report {
   id               String             @id @default(uuid())
   description      String

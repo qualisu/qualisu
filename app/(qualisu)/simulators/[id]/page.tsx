@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { getChecklistById } from '@/features/checklists/questions/api/server-actions'
+import { getChecklistById } from '@/features/questions/api/server-actions'
 import Client from '@/app/(qualisu)/simulators/[id]/client'
 import NotFoundChecklists from '@/app/(qualisu)/simulators/not-found'
 import { getSimulatorById } from '@/features/simulators/api/server-actions'

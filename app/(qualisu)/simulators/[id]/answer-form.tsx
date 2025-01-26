@@ -33,7 +33,7 @@ import {
 import VehicleInfo from '@/app/(qualisu)/simulators/vehicle-info'
 import { Button } from '@/components/ui/button'
 import QuestionBar from './question-bar'
-import { QuestionsColumn } from '../../checklists/questions/questions-columns'
+import { QuestionsColumn } from '../../questions/questions-columns'
 import { FormProvider, useForm } from 'react-hook-form'
 import { useToast } from '@/components/ui/use-toast'
 import {

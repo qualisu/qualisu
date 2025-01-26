@@ -5,10 +5,6 @@ import { DealersColumn } from '@/app/(qualisu)/parameters/dealers/dealers-column
 const DealersPage = async () => {
   const dealers = await getDealers()
 
-  if (!dealers) {
-    return <div>No data found</div>
-  }
-
   return <DealersClient dealers={dealers as DealersColumn[]} />
 }
 

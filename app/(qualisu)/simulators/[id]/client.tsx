@@ -1,7 +1,7 @@
 'use client'
 
 import { Answers } from '@prisma/client'
-import { QuestionsColumn } from '../../checklists/questions/questions-columns'
+import { QuestionsColumn } from '../../questions/questions-columns'
 import AnswerForm from './answer-form'
 
 interface ClientProps {

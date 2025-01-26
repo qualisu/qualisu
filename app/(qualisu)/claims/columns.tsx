@@ -197,8 +197,12 @@ export const columns: ColumnDef<Claim>[] = [
       return (
         <p className="px-4">{row.original.kilometre.toLocaleString('tr-TR')}</p>
       )
+    },
+    filterFn: (row, id, value: string[]) => {
+      return value.includes(row.getValue(id))
     }
   },
+
   {
     accessorKey: 'amount',
     header: ({ column }) => {

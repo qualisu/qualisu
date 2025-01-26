@@ -10,10 +10,6 @@ interface Props {
 export default async function CreatePage({ searchParams }: Props) {
   const category = await getCategoryById(searchParams.id ?? '')
 
-  if (!category) {
-    return <div>No data found</div>
-  }
-
   return (
     <div className="px-2">
       <CategoryForm
