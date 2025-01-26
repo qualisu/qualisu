@@ -13,23 +13,20 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 import { format } from 'date-fns'
+import { FailureCodes, VehicleGroup, VehicleModel } from '@prisma/client'
 
 export type Claim = {
   claimNo: string
   claimDate: Date
-  failureCode: string
   country: string
   dealerName: string
-  vehicleGroup: string
-  vehicleModel: string
   saseNo: string
   kilometre: number
   budgetNo: string
   amount: number
-  failures?: {
-    descEng?: string
-    descTurk?: string
-  }
+  models: VehicleModel
+  groups: VehicleGroup
+  failures: FailureCodes
 }
 
 export const columns: ColumnDef<Claim>[] = [
@@ -137,7 +134,27 @@ export const columns: ColumnDef<Claim>[] = [
       )
     },
     cell: ({ row }) => {
-      return <p className="px-4">{row.original.failureCode}</p>
+      return <p className="px-4">{row.original.failures.code}</p>
+    },
+    filterFn: (row, id, value: string[]) => {
+      return value.includes(row.getValue(id))
+    }
+  },
+  {
+    accessorKey: 'vehicleModel',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Vehicle Model
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      return <p className="px-4">{row.original.models.name}</p>
     },
     filterFn: (row, id, value: string[]) => {
       return value.includes(row.getValue(id))

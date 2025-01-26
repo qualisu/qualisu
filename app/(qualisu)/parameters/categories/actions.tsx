@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { deleteCategory } from '@/features/parameters/categories/api/server-actions'
+import { deleteMainCategory } from '@/features/parameters/categories/api/server-actions'
 import { useToast } from '@/components/ui/use-toast'
 import { AlertModal } from '@/components/alert-modal'
 
@@ -29,7 +29,7 @@ export const Actions = ({ id }: Props) => {
     if (!id) return
     try {
       setLoading(true)
-      await deleteCategory(id)
+      await deleteMainCategory(id)
       toast({
         variant: 'success',
         title: '🎉 Category deleted',

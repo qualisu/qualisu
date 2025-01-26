@@ -42,7 +42,7 @@ interface UseClaimsDataReturn {
 }
 
 export const useClaimsData = (claims: Claim[] = []): UseClaimsDataReturn => {
-  const [period, setPeriod] = useState(periods[0].value)
+  const [period, setPeriod] = useState(periods[2].value)
   const [showOthers, setShowOthers] = useState(false)
   const [showDealerOthers, setShowDealerOthers] = useState(false)
 
@@ -81,7 +81,7 @@ export const useClaimsData = (claims: Claim[] = []): UseClaimsDataReturn => {
 
       const failureCodeMatch =
         !activeFilters.failureCode ||
-        claim.failureCode === activeFilters.failureCode
+        claim.failures?.code === activeFilters.failureCode
 
       const dealerMatch =
         !activeFilters.dealer || claim.dealerName === activeFilters.dealer
@@ -124,7 +124,7 @@ export const useClaimsData = (claims: Claim[] = []): UseClaimsDataReturn => {
 
     const failureCodeMatch =
       !activeFilters.failureCode ||
-      claim.failureCode === activeFilters.failureCode
+      claim.failures?.code === activeFilters.failureCode
 
     const dealerMatch =
       !activeFilters.dealer || claim.dealerName === activeFilters.dealer
@@ -227,7 +227,7 @@ function processFailureCodeData(claims: Claim[], showOthers: boolean) {
       },
       claim
     ) => {
-      const code = claim.failureCode || 'Unknown'
+      const code = claim.failures?.code || 'Unknown'
       if (!acc[code]) {
         acc[code] = {
           count: 0,

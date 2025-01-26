@@ -44,46 +44,76 @@ export const columns: ColumnDef<VehiclesColumn>[] = [
     accessorKey: 'saseNo',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="VIN No" />
-    )
+    ),
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.saseNo}</div>
+    }
   },
   {
     accessorKey: 'vehicleGroup',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Vehicle Group" />
-    )
+    ),
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.vehicleGroup}</div>
+    }
   },
   {
     accessorKey: 'vehicleModel',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Vehicle Model" />
-    )
+    ),
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.vehicleModel}</div>
+    }
   },
   {
     accessorKey: 'prodDate',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Production Date" />
     ),
-    cell: ({ row }) => format(new Date(row.getValue('prodDate')), 'dd/MM/yyyy')
+    cell: ({ row }) => {
+      return (
+        <div className="ml-4">
+          {format(new Date(row.getValue('prodDate')), 'dd/MM/yyyy')}
+        </div>
+      )
+    }
   },
   {
     accessorKey: 'country',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Country" />
-    )
+    ),
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.country}</div>
+    }
   },
   {
     accessorKey: 'warStart',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Warranty Start" />
     ),
-    cell: ({ row }) => format(new Date(row.getValue('warStart')), 'dd/MM/yyyy')
+    cell: ({ row }) => {
+      return (
+        <div className="ml-4">
+          {format(new Date(row.getValue('warStart')), 'dd/MM/yyyy')}
+        </div>
+      )
+    }
   },
   {
     accessorKey: 'warEnd',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Warranty End" />
     ),
-    cell: ({ row }) => format(new Date(row.getValue('warEnd')), 'dd/MM/yyyy')
+    cell: ({ row }) => {
+      return (
+        <div className="ml-4">
+          {format(new Date(row.getValue('warEnd')), 'dd/MM/yyyy')}
+        </div>
+      )
+    }
   },
   {
     id: 'actions',

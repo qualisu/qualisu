@@ -3,7 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDown } from 'lucide-react'
 
-import { FormStatus, Groups } from '@prisma/client'
+import { FormStatus } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Actions } from './actions'
@@ -52,6 +52,9 @@ export const columns: ColumnDef<FailuresColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.code}</div>
     }
   },
   {
@@ -66,6 +69,9 @@ export const columns: ColumnDef<FailuresColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.descEng}</div>
     }
   },
   {
@@ -80,6 +86,9 @@ export const columns: ColumnDef<FailuresColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.descTurk}</div>
     }
   },
   {
@@ -102,7 +111,7 @@ export const columns: ColumnDef<FailuresColumn>[] = [
             row.original.status === FormStatus.Active
               ? 'bg-green-600'
               : 'bg-red-600',
-            'capitalize'
+            'capitalize ml-4'
           )}
         >
           {row.original.status}

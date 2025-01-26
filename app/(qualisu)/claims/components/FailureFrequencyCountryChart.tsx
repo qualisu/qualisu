@@ -122,8 +122,8 @@ export const FailureFrequencyCountryChart = ({
               tickLine={false}
               tickFormatter={(value) =>
                 `${(value * 100).toLocaleString('tr-TR', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0
                 })}%`
               }
             />

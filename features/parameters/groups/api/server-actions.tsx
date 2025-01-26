@@ -1,26 +1,25 @@
 'use server'
 
 import { GroupsColumn } from '@/app/(qualisu)/parameters/groups/columns'
-import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { FormStatus } from '@prisma/client'
 import { format } from 'date-fns'
 import { NextResponse } from 'next/server'
 
 interface VehicleGroup {
+  id?: string
   name: string
   status: FormStatus
-  id?: string
 }
 
 export const getVehicleGroupByName = async (name: string) => {
-  return await db.groups.findUnique({
+  return await db.vehicleGroup.findUnique({
     where: { name }
   })
 }
 
 export const getVehicleGroupById = async (id: string) => {
-  const res = await db.groups.findUnique({
+  const res = await db.vehicleGroup.findUnique({
     where: { id }
   })
 
@@ -37,7 +36,7 @@ export const getVehicleGroupById = async (id: string) => {
 
 export const getGroups = async () => {
   try {
-    const res = await db.groups.findMany({
+    const res = await db.vehicleGroup.findMany({
       orderBy: { createdAt: 'desc' }
     })
 
@@ -65,7 +64,7 @@ export const createVehicleGroup = async ({
     const existingVehicleGroup = await getVehicleGroupByName(name)
 
     if (id) {
-      return await db.groups.update({
+      return await db.vehicleGroup.update({
         where: { id },
         data: { name, status }
       })
@@ -73,7 +72,7 @@ export const createVehicleGroup = async ({
       if (existingVehicleGroup) {
         return new NextResponse('Vehicle group already exists', { status: 400 })
       } else {
-        return await db.groups.create({
+        return await db.vehicleGroup.create({
           data: { name, status, id }
         })
       }
@@ -85,7 +84,7 @@ export const createVehicleGroup = async ({
 
 export const deleteVehicleGroup = async (id: string) => {
   try {
-    await db.groups.delete({
+    await db.vehicleGroup.delete({
       where: { id }
     })
   } catch (error) {
@@ -96,7 +95,7 @@ export const deleteVehicleGroup = async (id: string) => {
 
 export const deleteVehicleGroups = async (ids: string[]) => {
   try {
-    await db.groups.deleteMany({
+    await db.vehicleGroup.deleteMany({
       where: { id: { in: ids } }
     })
   } catch (error) {

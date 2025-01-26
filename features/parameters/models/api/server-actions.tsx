@@ -13,7 +13,6 @@ interface Model {
   groupsId: string
 }
 
-// create
 export const createModel = async ({
   id,
   name,
@@ -23,7 +22,7 @@ export const createModel = async ({
 }: Model): Promise<any> => {
   try {
     const existingModel = await getModelByName(name)
-    const group = await db.groups.findUnique({
+    const group = await db.vehicleGroup.findUnique({
       where: { id: groupsId }
     })
 
@@ -32,21 +31,21 @@ export const createModel = async ({
     }
 
     if (id) {
-      return await db.models.update({
+      return await db.vehicleModel.update({
         where: { id },
-        data: { name, status, image, groupName: group.name }
+        data: { name, status, image, vehicleGroupId: group.id }
       })
     }
 
     if (existingModel) {
       return new NextResponse('Model already exists', { status: 400 })
     } else {
-      return await db.models.create({
+      return await db.vehicleModel.create({
         data: {
           name,
           status,
           image: image || '',
-          groupName: group.name
+          vehicleGroupId: group.id
         }
       })
     }
@@ -57,23 +56,14 @@ export const createModel = async ({
 }
 
 export const getModelByName = async (name: string) => {
-  return await db.models.findUnique({
+  return await db.vehicleModel.findUnique({
     where: { name }
   })
 }
 
-export const deleteModel = async (id: string) => {
-  try {
-    await db.models.delete({ where: { id } })
-  } catch (error) {
-    console.error(error)
-    return new NextResponse('Failed to delete vehicle model', { status: 500 })
-  }
-}
-
 export const getModelById = async (id: string) => {
   try {
-    return await db.models.findUnique({
+    return await db.vehicleModel.findUnique({
       where: { id },
       include: { groups: true }
     })
@@ -85,104 +75,43 @@ export const getModelById = async (id: string) => {
 
 export const getModels = async () => {
   try {
-    const models = await db.models.findMany({
+    const res = await db.vehicleModel.findMany({
       include: { groups: true },
       orderBy: { createdAt: 'desc' }
     })
 
-    const formattedModels = models.map((item) => ({
+    const formattedRes = res.map((item) => ({
       id: item.id,
       name: item.name,
-      group: item.groupName,
       status: item.status,
-      createdAt: format(item.createdAt, 'dd-MM-yyyy'),
-      updatedAt: format(item.updatedAt, 'dd-MM-yyyy')
+      image: item.image,
+      vehicleGroupId: item.vehicleGroupId,
+      group: item.groups.name,
+      createdAt: format(item.createdAt, 'dd/MM/yyyy'),
+      updatedAt: format(item.updatedAt, 'dd/MM/yyyy')
     }))
 
-    return formattedModels
+    return formattedRes
   } catch (error) {
-    console.error(error)
-    return null
+    console.error('Error fetching models:', error)
+    return []
   }
 }
 
-export const importModels = async (
-  modelData: {
-    name: string
-    group: string
-    status: FormStatus
-  }[]
-) => {
+export const deleteModel = async (id: string) => {
   try {
-    const results = []
+    await db.vehicleModel.delete({ where: { id } })
+  } catch (error) {
+    console.error(error)
+    return new NextResponse('Failed to delete vehicle model', { status: 500 })
+  }
+}
 
-    for (const model of modelData) {
-      try {
-        // Find the group by name
-        const group = await db.groups.findUnique({
-          where: { name: model.group }
-        })
-
-        if (!group) {
-          results.push({
-            success: false,
-            error: `Group not found: ${model.group}`,
-            model: model.name
-          })
-          continue
-        }
-
-        // Check if model already exists
-        const existingModel = await getModelByName(model.name)
-        if (existingModel) {
-          results.push({
-            success: false,
-            error: 'Model already exists',
-            model: model.name
-          })
-          continue
-        }
-
-        // Create the model
-        const createdModel = await db.models.create({
-          data: {
-            name: model.name,
-            status:
-              model.status === 'Active'
-                ? FormStatus.Active
-                : FormStatus.Passive,
-            image: '',
-            groupName: group.name
-          }
-        })
-
-        results.push({
-          success: true,
-          model: createdModel.name
-        })
-      } catch (modelError) {
-        console.error('Error processing model:', model, modelError)
-        results.push({
-          success: false,
-          error:
-            modelError instanceof Error
-              ? modelError.message
-              : 'Unknown error occurred',
-          model: model.name
-        })
-      }
-    }
-
-    return {
-      success: true,
-      results
-    }
-  } catch (error: any) {
-    console.error('Error importing models:', error)
-    return {
-      success: false,
-      error: 'Failed to import models',
-      details: error.message
-    }
+export const deleteModels = async (ids: string[]) => {
+  try {
+    await db.vehicleModel.deleteMany({ where: { id: { in: ids } } })
+  } catch (error) {
+    console.error(error)
+    return new NextResponse('Failed to delete vehicle models', { status: 500 })
   }
 }

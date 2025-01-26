@@ -63,9 +63,6 @@ export const createChecklist = async (checklist: ChecklistFormValues) => {
       models: checklist.modelIds
         ? { connect: checklist.modelIds.map((id) => ({ id })) }
         : undefined,
-      vehicles: checklist.vehicleIds
-        ? { connect: checklist.vehicleIds.map((id) => ({ id })) }
-        : undefined,
       questions: checklist.questions
         ? { connect: checklist.questions.map((id: string) => ({ id })) }
         : undefined

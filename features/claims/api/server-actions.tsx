@@ -6,9 +6,7 @@ import { revalidatePath } from 'next/cache'
 export const getClaims = async () => {
   const claims = await db.claims.findMany({
     orderBy: { claimDate: 'desc' },
-    include: {
-      failures: true
-    }
+    include: { failures: true, models: true, groups: true }
   })
 
   return claims
@@ -20,8 +18,8 @@ export async function createClaim(data: {
   failureCode: string
   country: string
   dealerName: string
-  vehicleGroup: string
-  vehicleModel: string
+  vehicleGroupId: string
+  vehicleModelId: string
   saseNo: string
   kilometre: number
   budgetNo: string

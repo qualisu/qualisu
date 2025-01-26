@@ -9,8 +9,8 @@ interface Vehicle {
   saseNo: string
   warStart: Date
   warEnd: Date
-  vehicleGroup: string
-  vehicleModel: string
+  vehicleGroupId: string
+  vehicleModelId: string
   prodDate: Date
   country: string
   checklistsId: string
@@ -21,8 +21,8 @@ export const createVehicle = async ({
   saseNo,
   warStart,
   warEnd,
-  vehicleGroup,
-  vehicleModel,
+  vehicleGroupId,
+  vehicleModelId,
   prodDate,
   country
 }: Vehicle): Promise<any> => {
@@ -36,8 +36,8 @@ export const createVehicle = async ({
           saseNo,
           warStart,
           warEnd,
-          vehicleGroup,
-          vehicleModel,
+          vehicleGroupId,
+          vehicleModelId,
           prodDate,
           country
         }
@@ -52,8 +52,8 @@ export const createVehicle = async ({
           saseNo,
           warStart,
           warEnd,
-          vehicleGroup,
-          vehicleModel,
+          vehicleGroupId,
+          vehicleModelId,
           prodDate,
           country
         }
@@ -95,6 +95,7 @@ export const getVehicleById = async (saseNo: string) => {
 export const getVehicles = async () => {
   try {
     const vehicles = await db.vehicles.findMany({
+      include: { groups: true, models: true },
       orderBy: { warStart: 'desc' }
     })
 
@@ -104,8 +105,8 @@ export const getVehicles = async () => {
       saseNo: vehicle.saseNo,
       warStart: vehicle.warStart,
       warEnd: vehicle.warEnd,
-      vehicleGroup: vehicle.vehicleGroup,
-      vehicleModel: vehicle.vehicleModel,
+      vehicleGroup: vehicle.groups.name,
+      vehicleModel: vehicle.models.name,
       prodDate: vehicle.prodDate,
       country: vehicle.country
     }))
@@ -137,8 +138,8 @@ export async function uploadVehicles(formData: FormData) {
         saseNo: row.saseNo,
         warStart,
         warEnd,
-        vehicleGroup: row.vehicleGroup,
-        vehicleModel: row.vehicleModel,
+        vehicleGroupId: row.vehicleGroup,
+        vehicleModelId: row.vehicleModel,
         prodDate,
         country: row.country || 'TR' // Default to TR if not provided
       }
@@ -153,5 +154,74 @@ export async function uploadVehicles(formData: FormData) {
   } catch (error) {
     console.error('Error uploading vehicles:', error)
     throw error
+  }
+}
+
+export const getFilteredVehicles = async (
+  search?: string,
+  page: number = 1,
+  limit: number = 50,
+  selectedGroups: string[] = [],
+  selectedModels: string[] = []
+) => {
+  try {
+    const skip = (page - 1) * limit
+
+    // Create where clause
+    const where = {
+      AND: [
+        // Search filter - only search in saseNo and country
+        search
+          ? {
+              OR: [
+                { saseNo: { contains: search, mode: 'insensitive' } },
+                { country: { contains: search, mode: 'insensitive' } }
+              ]
+            }
+          : {},
+        // Group filter
+        selectedGroups.length > 0
+          ? {
+              vehicleGroup: { in: selectedGroups }
+            }
+          : {},
+        // Model filter
+        selectedModels.length > 0
+          ? {
+              vehicleModel: { in: selectedModels }
+            }
+          : {}
+      ]
+    } as any // Type assertion to avoid Prisma type issues
+
+    // Get filtered vehicles
+    const vehicles = await db.vehicles.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { warStart: 'desc' }
+    })
+
+    // Get total count for pagination
+    const total = await db.vehicles.count({ where })
+
+    return {
+      vehicles: vehicles.map((vehicle) => ({
+        id: vehicle.saseNo,
+        name: `${vehicle.saseNo} - ${vehicle.country}`,
+        saseNo: vehicle.saseNo,
+        warStart: vehicle.warStart,
+        warEnd: vehicle.warEnd,
+        vehicleGroupId: vehicle.vehicleGroupId,
+        vehicleModelId: vehicle.vehicleModelId,
+        prodDate: vehicle.prodDate,
+        country: vehicle.country
+      })),
+      total,
+      hasMore: skip + vehicles.length < total
+    }
+  } catch (error) {
+    console.error('[DEBUG] Error in getFilteredVehicles:', error)
+    return { vehicles: [], total: 0, hasMore: false }
   }
 }

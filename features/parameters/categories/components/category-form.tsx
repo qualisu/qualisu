@@ -30,7 +30,7 @@ import { AlertModal } from '@/components/alert-modal'
 import { useState } from 'react'
 import {
   createCategory,
-  deleteCategory
+  deleteMainCategory
 } from '@/features/parameters/categories/api/server-actions'
 import { CategoriesColumn } from '@/app/(qualisu)/parameters/categories/category-columns'
 
@@ -84,7 +84,7 @@ export default function CategoryForm({ id, initialData }: Props) {
     if (!id) return
     try {
       setLoading(true)
-      await deleteCategory(id)
+      await deleteMainCategory(id)
       toast({
         variant: 'success',
         title: '🎉 Category deleted',

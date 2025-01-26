@@ -141,9 +141,12 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between space-x-2">
-        <DataTablePagination table={table} />
-      </div>
+      <DataTablePagination
+        table={table}
+        currentPage={table.getState().pagination.pageIndex + 1}
+        pageCount={table.getPageCount()}
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+      />
     </div>
   )
 }

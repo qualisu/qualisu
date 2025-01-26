@@ -6,13 +6,13 @@ import { format } from 'date-fns'
 import { NextResponse } from 'next/server'
 
 export const getFailureByCode = async (code: string) => {
-  return await db.failures.findUnique({
+  return await db.failureCodes.findUnique({
     where: { code }
   })
 }
 
 export const getFailureById = async (code: string) => {
-  const res = await db.failures.findUnique({
+  const res = await db.failureCodes.findUnique({
     where: { code }
   })
 
@@ -28,7 +28,7 @@ export const getFailureById = async (code: string) => {
 
 export const getFailures = async () => {
   try {
-    const res = await db.failures.findMany({
+    const res = await db.failureCodes.findMany({
       orderBy: { code: 'asc' }
     })
 
@@ -41,8 +41,8 @@ export const getFailures = async () => {
 
     return formattedData
   } catch (error) {
-    console.error(error)
-    return new NextResponse('Failed to fetch failures', { status: 500 })
+    console.error('Error fetching failures:', error)
+    return [] // Return empty array instead of NextResponse
   }
 }
 
@@ -56,7 +56,7 @@ export const createFailure = async ({
     const existingFailure = await getFailureByCode(code)
 
     if (code) {
-      return await db.failures.update({
+      return await db.failureCodes.update({
         where: { code },
         data: { code, descEng, descTurk, status }
       })
@@ -64,7 +64,7 @@ export const createFailure = async ({
       if (existingFailure) {
         return new NextResponse('Failure already exists', { status: 400 })
       } else {
-        return await db.failures.create({
+        return await db.failureCodes.create({
           data: { code, descEng, descTurk, status }
         })
       }
@@ -76,7 +76,7 @@ export const createFailure = async ({
 
 export const deleteFailure = async (code: string) => {
   try {
-    await db.failures.delete({
+    await db.failureCodes.delete({
       where: { code }
     })
   } catch (error) {
@@ -87,7 +87,7 @@ export const deleteFailure = async (code: string) => {
 
 export const deleteFailures = async (codes: string[]) => {
   try {
-    await db.failures.deleteMany({
+    await db.failureCodes.deleteMany({
       where: { code: { in: codes } }
     })
   } catch (error) {

@@ -3,7 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDown } from 'lucide-react'
 
-import { Failures, FormStatus } from '@prisma/client'
+import { FailureCodes, FormStatus } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
@@ -13,9 +13,9 @@ import { SubActions } from './sub-actions'
 export type SubCategoriesColumn = {
   id: string
   name: string
-  failures: Failures[]
-  categoryId: string
-  category: string
+  mainCategoryId: string
+  mainCategory: string
+  failureCodes: FailureCodes[]
   status: FormStatus
   createdAt: string
   updatedAt: string
@@ -45,7 +45,7 @@ export const subColumns: ColumnDef<SubCategoriesColumn>[] = [
     enableHiding: false
   },
   {
-    accessorKey: 'category',
+    accessorKey: 'mainCategory',
     header: ({ column }) => {
       return (
         <Button
@@ -56,6 +56,9 @@ export const subColumns: ColumnDef<SubCategoriesColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.mainCategory}</div>
     }
   },
   {
@@ -70,6 +73,9 @@ export const subColumns: ColumnDef<SubCategoriesColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.name}</div>
     }
   },
   {
@@ -92,7 +98,7 @@ export const subColumns: ColumnDef<SubCategoriesColumn>[] = [
             row.original.status === FormStatus.Active
               ? 'bg-green-600'
               : 'bg-red-600',
-            'capitalize'
+            'capitalize ml-4'
           )}
         >
           {row.original.status}

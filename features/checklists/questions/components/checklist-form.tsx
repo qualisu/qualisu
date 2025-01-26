@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { useForm, Controller } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { BadgeAlert, Trash, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -20,10 +20,7 @@ import Heading from '@/components/heading'
 import { useToast } from '@/components/ui/use-toast'
 import { AlertModal } from '@/components/alert-modal'
 import { MultiSelect } from '@/components/multi-select'
-import {
-  columns,
-  QuestionsColumn
-} from '@/app/(qualisu)/checklists/questions/questions-columns'
+import { columns } from '@/app/(qualisu)/checklists/questions/questions-columns'
 import {
   Select,
   SelectContent,
@@ -31,14 +28,12 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { PointsColumn } from '@/app/(qualisu)/parameters/points/columns'
 import { DataTable } from '@/components/data-table'
 import AddQuestionDialog from './add-question-dialog'
-import { DealersColumn } from '@/app/(qualisu)/parameters/dealers/dealers-columns'
 import { Separator } from '@/components/ui/separator'
-import AddItemDialog from './add-item-dialog'
 import { createChecklist } from '../api/server-actions'
 import { Checklists, cTypes } from '@prisma/client'
+import { PaginatedVehicleSelect } from './paginated-vehicle-select'
 
 interface Props {
   id?: string
@@ -47,7 +42,6 @@ interface Props {
   points: any
   groups: any
   models: any
-  vehicles: any
 }
 
 export const checklistSchema = z
@@ -88,7 +82,6 @@ export default function ChecklistForm({
   points,
   groups,
   models,
-  vehicles,
   questions
 }: Props) {
   const { toast } = useToast()
@@ -262,10 +255,9 @@ export default function ChecklistForm({
                             shouldValidate: true
                           })
                         }}
-                        defaultValue={field.value}
+                        value={field.value || []}
                         placeholder="Select a point"
-                        variant={'secondary' as const}
-                        maxCount={3}
+                        variant="secondary"
                       />
                     </FormControl>
                     <FormMessage />
@@ -315,50 +307,60 @@ export default function ChecklistForm({
                                 form.setValue('groupIds', value, {
                                   shouldValidate: true
                                 })
-                              }}
-                              defaultValue={field.value}
-                              value={field.value}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <Controller
-                      name="modelIds"
-                      control={form.control}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Models</FormLabel>
-                          <FormControl>
-                            <MultiSelect
-                              options={models.map((model: any) => ({
-                                value: model.id,
-                                label: model.name
-                              }))}
-                              onValueChange={(value) => {
-                                field.onChange(value)
-                                form.setValue('modelIds', value, {
+                                form.setValue('modelIds', [], {
                                   shouldValidate: true
                                 })
                                 form.setValue('vehicleIds', [], {
                                   shouldValidate: true
                                 })
                               }}
-                              defaultValue={field.value}
-                              value={field.value}
-                              placeholder={
-                                groups.length > 0
-                                  ? 'Select models (optional)'
-                                  : 'First select a group'
-                              }
-                              disabled={groups.length === 0}
+                              value={field.value || []}
                             />
                           </FormControl>
                         </FormItem>
                       )}
                     />
+                    <Controller
+                      name="modelIds"
+                      control={form.control}
+                      render={({ field }) => {
+                        const selectedGroups = form.watch('groupIds') || []
 
+                        const filteredModels = models.filter((model: any) =>
+                          selectedGroups.includes(model.group?.id)
+                        )
+
+                        return (
+                          <FormItem>
+                            <FormLabel>Models</FormLabel>
+                            <FormControl>
+                              <MultiSelect
+                                options={filteredModels.map((model: any) => ({
+                                  value: model.id,
+                                  label: model.name
+                                }))}
+                                onValueChange={(value) => {
+                                  field.onChange(value)
+                                  form.setValue('modelIds', value, {
+                                    shouldValidate: true
+                                  })
+                                  form.setValue('vehicleIds', [], {
+                                    shouldValidate: true
+                                  })
+                                }}
+                                value={field.value || []}
+                                placeholder={
+                                  selectedGroups.length > 0
+                                    ? 'Select models (optional)'
+                                    : 'First select a group'
+                                }
+                                disabled={selectedGroups.length === 0}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )
+                      }}
+                    />
                     <Controller
                       name="vehicleIds"
                       control={form.control}
@@ -366,25 +368,34 @@ export default function ChecklistForm({
                         <FormItem>
                           <FormLabel>Vehicles</FormLabel>
                           <FormControl>
-                            <MultiSelect
-                              options={vehicles.map((vehicle: any) => ({
-                                value: vehicle.id,
-                                label: vehicle.name
-                              }))}
+                            <PaginatedVehicleSelect
                               onValueChange={(value) => {
                                 field.onChange(value)
                                 form.setValue('vehicleIds', value, {
                                   shouldValidate: true
                                 })
                               }}
-                              defaultValue={field.value}
-                              value={field.value}
+                              value={field.value || []}
                               placeholder={
                                 (form.watch('groupIds') || []).length > 0
                                   ? 'Select vehicles (optional)'
                                   : 'First select a group'
                               }
                               disabled={!(form.watch('groupIds') || []).length}
+                              selectedGroups={groups
+                                .filter((group: any) =>
+                                  (form.watch('groupIds') || []).includes(
+                                    group.id
+                                  )
+                                )
+                                .map((group: any) => group.name)}
+                              selectedModels={models
+                                .filter((model: any) =>
+                                  (form.watch('modelIds') || []).includes(
+                                    model.id
+                                  )
+                                )
+                                .map((model: any) => model.name)}
                             />
                           </FormControl>
                           <FormMessage />

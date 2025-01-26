@@ -11,24 +11,24 @@ interface SubCategories {
   id?: string
   name: string
   status: FormStatus
-  failures: string[]
-  categoryId: string
+  failureCodes: string[]
+  mainCategoryId: string
 }
 
 export const getCategoryByName = async (name: string) => {
-  return await db.categories.findUnique({
+  return await db.failureCategory.findUnique({
     where: { name }
   })
 }
 
 export const getSubCategoryByName = async (name: string) => {
-  return await db.subCategories.findUnique({
+  return await db.failureSubCategory.findUnique({
     where: { name }
   })
 }
 
 export const getCategoryById = async (id: string) => {
-  const category = await db.categories.findUnique({
+  const category = await db.failureCategory.findUnique({
     where: { id }
   })
 
@@ -43,18 +43,18 @@ export const getCategoryById = async (id: string) => {
   return formattedData
 }
 
-export const getSubCategoryById = async (id: string) => {
-  const subCategory = await db.subCategories.findUnique({
+export const getSubCategoryById = async (id: string | undefined) => {
+  const subCategory = await db.failureSubCategory.findUnique({
     where: { id },
-    include: { categories: true, failures: true }
+    include: { mainCategory: true, failureCodes: true }
   })
 
   const formattedData = {
     id: subCategory?.id,
     name: subCategory?.name,
-    categoryId: subCategory?.categories.id,
-    category: subCategory?.categories.name,
-    failures: subCategory?.failures,
+    mainCategoryId: subCategory?.mainCategoryId,
+    mainCategory: subCategory?.mainCategory.name,
+    failureCodes: subCategory?.failureCodes,
     status: subCategory?.status,
     createdAt: format(subCategory?.createdAt ?? new Date(), 'dd-MM-yyyy'),
     updatedAt: format(subCategory?.updatedAt ?? new Date(), 'dd-MM-yyyy')
@@ -65,8 +65,8 @@ export const getSubCategoryById = async (id: string) => {
 
 export const getCategories = async () => {
   try {
-    const res = await db.categories.findMany({
-      orderBy: { createdAt: 'desc' }
+    const res = await db.failureCategory.findMany({
+      orderBy: { updatedAt: 'desc' }
     })
 
     const formattedData: CategoriesColumn[] = res.map((item) => ({
@@ -86,17 +86,17 @@ export const getCategories = async () => {
 
 export const getSubCategories = async () => {
   try {
-    const res = await db.subCategories.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { failures: true, categories: true }
+    const res = await db.failureSubCategory.findMany({
+      orderBy: { updatedAt: 'desc' },
+      include: { failureCodes: true, mainCategory: true }
     })
 
     const formattedData: SubCategoriesColumn[] = res.map((item) => ({
       id: item.id,
       name: item.name,
-      categoryId: item.categoriesId,
-      failures: item.failures,
-      category: item.categories.name,
+      mainCategoryId: item.mainCategoryId,
+      mainCategory: item.mainCategory.name,
+      failureCodes: item.failureCodes,
       status: item.status,
       createdAt: format(item.createdAt, 'dd-MM-yyyy'),
       updatedAt: format(item.updatedAt, 'dd-MM-yyyy')
@@ -118,7 +118,7 @@ export const createCategory = async ({
     const existingCategory = await getCategoryByName(name)
 
     if (id) {
-      return await db.categories.update({
+      return await db.failureCategory.update({
         where: { id },
         data: { name, status }
       })
@@ -126,7 +126,7 @@ export const createCategory = async ({
       if (existingCategory) {
         return new NextResponse('Category already exists', { status: 400 })
       } else {
-        return await db.categories.create({
+        return await db.failureCategory.create({
           data: { name, status }
         })
       }
@@ -139,27 +139,29 @@ export const createCategory = async ({
 export const createSubCategory = async ({
   id,
   name,
-  failures,
-  categoryId,
+  failureCodes,
+  mainCategoryId,
   status
 }: SubCategories): Promise<any> => {
   try {
-    const existingSubCategory = await getSubCategoryByName(name)
+    const existingSubCategory = await getSubCategoryById(id)
 
     if (id) {
-      await db.subCategories.update({
+      await db.failureSubCategory.update({
         where: { id },
-        data: { failures: { set: [] } }
+        data: { failureCodes: { set: [] } }
       })
 
-      return await db.subCategories.update({
+      console.log(failureCodes)
+
+      return await db.failureSubCategory.update({
         where: { id },
         data: {
           name,
           status,
-          categoriesId: categoryId,
-          failures: {
-            connect: failures.map((failure) => ({ id: failure }))
+          mainCategoryId,
+          failureCodes: {
+            connect: failureCodes.map((failure) => ({ code: failure }))
           }
         }
       })
@@ -167,13 +169,13 @@ export const createSubCategory = async ({
       if (existingSubCategory) {
         return new NextResponse('Sub Category already exists', { status: 400 })
       } else {
-        return await db.subCategories.create({
+        return await db.failureSubCategory.create({
           data: {
             name,
             status,
-            categoriesId: categoryId,
-            failures: {
-              connect: failures.map((failure) => ({ id: failure }))
+            mainCategoryId,
+            failureCodes: {
+              connect: failureCodes.map((failure) => ({ code: failure }))
             }
           }
         })
@@ -184,9 +186,9 @@ export const createSubCategory = async ({
   }
 }
 
-export const deleteCategory = async (id: string) => {
+export const deleteMainCategory = async (id: string) => {
   try {
-    await db.categories.delete({
+    await db.failureCategory.delete({
       where: { id }
     })
   } catch (error) {
@@ -197,7 +199,7 @@ export const deleteCategory = async (id: string) => {
 
 export const deleteSubCategory = async (id: string) => {
   try {
-    await db.subCategories.delete({
+    await db.failureSubCategory.delete({
       where: { id }
     })
   } catch (error) {
@@ -208,7 +210,7 @@ export const deleteSubCategory = async (id: string) => {
 
 export const getSubCategoryOptions = async () => {
   try {
-    const subCategories = await db.subCategories.findMany({
+    const subCategories = await db.failureSubCategory.findMany({
       select: { id: true, name: true },
       orderBy: { name: 'asc' }
     })

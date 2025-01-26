@@ -55,6 +55,9 @@ export const columns: ColumnDef<ModelsColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.group}</div>
     }
   },
   {
@@ -69,6 +72,9 @@ export const columns: ColumnDef<ModelsColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.name}</div>
     }
   },
   {
@@ -91,7 +97,7 @@ export const columns: ColumnDef<ModelsColumn>[] = [
             row.original.status === FormStatus.Active
               ? 'bg-green-600'
               : 'bg-red-600',
-            'capitalize'
+            'capitalize ml-4'
           )}
         >
           {row.original.status}
@@ -101,13 +107,38 @@ export const columns: ColumnDef<ModelsColumn>[] = [
   },
   {
     accessorKey: 'createdAt',
-    header: 'Created Date'
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Created Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.createdAt}</div>
+    }
   },
   {
     accessorKey: 'updatedAt',
-    header: 'Updated Date'
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Updated Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.updatedAt}</div>
+    }
   },
-
   {
     id: 'actions',
     header: 'Actions',

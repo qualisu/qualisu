@@ -7,19 +7,18 @@ import { getDealers } from '@/features/parameters/dealers/api/server-actions'
 import { getGroups } from '@/features/parameters/groups/api/server-actions'
 import { getModels } from '@/features/parameters/models/api/server-actions'
 import { getPoints } from '@/features/parameters/points/api/server-actions'
-import { getVehicles } from '@/features/parameters/vehicles/api/server-actions'
 
 interface Props {
   searchParams: {
     id?: string
   }
 }
+
 export default async function CreatePage({ searchParams }: Props) {
   const checklist = await getChecklistById(searchParams.id ?? '')
   const points = await getPoints()
   const groups = await getGroups()
   const models = await getModels()
-  const vehicles = await getVehicles()
   const questions = await getQuestions()
 
   return (
@@ -29,7 +28,6 @@ export default async function CreatePage({ searchParams }: Props) {
         points={points as any}
         groups={groups as any}
         models={models as any}
-        vehicles={vehicles as any}
         questions={questions as any}
       />
     </div>

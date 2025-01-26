@@ -1,3 +1,5 @@
+'use client'
+
 import {
   BarChart,
   Bar,
@@ -40,7 +42,6 @@ export const FailureFrequencyChart = ({
   const [filteredData, setFilteredData] = useState(data)
 
   useEffect(() => {
-    // Reset filtered data when failure code changes
     if (selectedFailureCode) {
       setFilteredData(data)
     } else {
@@ -115,15 +116,11 @@ export const FailureFrequencyChart = ({
               dataKey="model"
               type="category"
               tickLine={false}
-              tickMargin={10}
               axisLine={false}
+              tickMargin={10}
               orientation="left"
-              width={190}
-              tick={{
-                fontSize: 12,
-                width: 180,
-                textAnchor: 'end'
-              }}
+              width={120}
+              tick={{ fontSize: 12 }}
             />
             <XAxis
               type="number"
