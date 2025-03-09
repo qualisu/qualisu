@@ -84,7 +84,6 @@ export default function SubCategoryForm({
   })
 
   const onSubmit = async (values: FormValues) => {
-    console.log(values)
     try {
       await createSubCategory(values as any)
       toast({

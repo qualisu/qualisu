@@ -62,12 +62,5 @@ function calculateMatchScore(
     if (subCatLower.includes(word)) score += 1
   })
 
-  console.log(`Skor hesaplama:
-    Metin: ${searchText}
-    Ana Kategori: ${mainCatLower}
-    Alt Kategori: ${subCatLower}
-    Skor: ${score}
-  `)
-
   return score
 }

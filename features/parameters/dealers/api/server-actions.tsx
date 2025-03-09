@@ -5,22 +5,20 @@ import { format } from 'date-fns'
 import { FormStatus } from '@prisma/client'
 import { NextResponse } from 'next/server'
 
-import { DealersColumn } from '@/app/(qualisu)/parameters/dealers/dealers-columns'
+import { DealersColumn } from '@/app/(qualisu)/parameters/dealers/columns'
 
 interface Dealers {
   id?: string
   name: string
   country: string
-  city: string
+  city?: string
   code: string
   status: FormStatus
 }
 
 export const getDealers = async () => {
   try {
-    const res = await db.dealers.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
+    const res = await db.dealers.findMany({})
 
     const formattedData: DealersColumn[] = res.map((item) => ({
       id: item.id,
@@ -29,9 +27,7 @@ export const getDealers = async () => {
       country: item.country,
       state: item.state ?? '',
       city: item.city ?? '',
-      status: item.status,
-      createdAt: format(item.createdAt, 'dd-MM-yyyy'),
-      updatedAt: format(item.updatedAt, 'dd-MM-yyyy')
+      status: item.active
     }))
 
     return formattedData
@@ -46,8 +42,8 @@ export const createDealer = async ({
   name,
   code,
   country,
-  state,
   city,
+  state,
   status
 }: DealersColumn): Promise<any> => {
   try {
@@ -56,14 +52,14 @@ export const createDealer = async ({
     if (id) {
       return await db.dealers.update({
         where: { id },
-        data: { code, name, country, state, city, status }
+        data: { code, name, country, city, state, active: status }
       })
     } else {
       if (existingDealer) {
         return new NextResponse('Failure already exists', { status: 400 })
       } else {
         return await db.dealers.create({
-          data: { code, name, country, state, city, status }
+          data: { code, name, country, city: city ?? '', state, active: status }
         })
       }
     }
@@ -104,9 +100,7 @@ export const getDealerById = async (id: string) => {
       country: res?.country,
       state: res?.state,
       city: res?.city,
-      status: res?.status,
-      createdAt: format(res?.createdAt ?? new Date(), 'dd-MM-yyyy'),
-      updatedAt: format(res?.updatedAt ?? new Date(), 'dd-MM-yyyy')
+      status: res?.active
     }
 
     return formattedData

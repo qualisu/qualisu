@@ -27,6 +27,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { DataTablePagination } from './data-table-pagination'
+import { DataTableToolbar } from '@/app/(qualisu)/claims/components/data-table-toolbar'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -36,6 +37,18 @@ interface DataTableProps<TData, TValue> {
   isAdd: boolean
   onAdd?: () => void
   meta?: Record<string, unknown>
+  enableRowSelection?: boolean
+  rowSelection?: Record<number, boolean>
+  onRowSelectionChange?: (value: Record<number, boolean>) => void
+  facetedFilters?: {
+    column: string
+    title: string
+    options: {
+      label: string
+      value: string
+      icon?: React.ComponentType<{ className?: string }>
+    }[]
+  }[]
   toolbar?: React.ComponentType<{
     table: TableInstance<TData>
     filterKey: string
@@ -51,11 +64,14 @@ export function DataTable<TData, TValue>({
   isAdd,
   onAdd,
   meta,
+  enableRowSelection,
+  rowSelection,
+  onRowSelectionChange,
+  facetedFilters,
   toolbar: Toolbar
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
 
   const table = useReactTable({
@@ -64,11 +80,18 @@ export function DataTable<TData, TValue>({
     state: {
       sorting,
       columnVisibility,
-      rowSelection,
+      rowSelection: rowSelection || {},
       columnFilters
     },
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
+    enableRowSelection: !!enableRowSelection,
+    onRowSelectionChange: (updaterOrValue) => {
+      if (typeof updaterOrValue === 'function') {
+        const newValue = updaterOrValue(rowSelection || {})
+        onRowSelectionChange?.(newValue as Record<number, boolean>)
+      } else {
+        onRowSelectionChange?.(updaterOrValue as Record<number, boolean>)
+      }
+    },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -78,19 +101,37 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    filterFns: {
+      fuzzy: (row, columnId, value) => {
+        const itemValue = row.getValue(columnId) as string
+        return itemValue.toLowerCase().includes(value.toLowerCase())
+      },
+      categoryFilter: (row, id, filterValue) => {
+        if (!filterValue?.length) return true
+        const rowValue = row.getValue(id)
+        return filterValue.includes(rowValue)
+      }
+    },
     meta
   })
 
   return (
     <div className="space-y-4">
-      {Toolbar && (
+      {Toolbar ? (
         <Toolbar
           table={table}
           filterKey={filterKey}
           isAdd={isAdd}
           onAdd={onAdd}
         />
+      ) : (
+        <DataTableToolbar
+          table={table}
+          filterKey={filterKey}
+          facetedFilters={facetedFilters}
+        />
       )}
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>

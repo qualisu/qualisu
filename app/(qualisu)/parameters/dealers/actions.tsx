@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { deleteCategory } from '@/features/parameters/categories/api/server-actions'
 import { useToast } from '@/components/ui/use-toast'
 import { AlertModal } from '@/components/alert-modal'
 import { deleteDealer } from '@/features/parameters/dealers/api/server-actions'

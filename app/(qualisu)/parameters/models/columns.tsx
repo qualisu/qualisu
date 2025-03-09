@@ -3,7 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDown } from 'lucide-react'
 
-import { FormStatus } from '@prisma/client'
+import { FormStatus, VehicleGroup } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Actions } from './actions'
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 export type ModelsColumn = {
   id: string
   name: string
-  group: string
+  groups: VehicleGroup[]
   status: FormStatus
   image: string
   createdAt: string
@@ -57,7 +57,11 @@ export const columns: ColumnDef<ModelsColumn>[] = [
       )
     },
     cell: ({ row }) => {
-      return <div className="ml-4">{row.original.group}</div>
+      return (
+        <div className="ml-4">
+          {row.original.groups.map((group) => group.name).join(', ')}
+        </div>
+      )
     }
   },
   {

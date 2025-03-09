@@ -8,6 +8,7 @@ import {
   GalleryVerticalEnd,
   LayoutDashboardIcon,
   Play,
+  SearchCode,
   Settings,
   Settings2Icon
 } from 'lucide-react'
@@ -45,16 +46,31 @@ const data = {
     },
     {
       title: 'Checklists',
-      url: '/checklists',
+      url: '/checklists/lists',
       icon: CheckCheck,
       items: [
         {
-          title: 'Lists',
-          url: '/checklists/lists'
+          title: 'Create',
+          url: '/checklists'
         },
         {
-          title: 'Questions',
-          url: '/checklists/questions'
+          title: 'Lists',
+          url: '/checklists/lists'
+        }
+      ]
+    },
+    {
+      title: 'Questions',
+      url: '/questions',
+      icon: SearchCode,
+      items: [
+        {
+          title: 'Create',
+          url: '/questions'
+        },
+        {
+          title: 'Lists',
+          url: '/questions/lists'
         }
       ]
     },

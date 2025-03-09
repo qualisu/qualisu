@@ -10,7 +10,7 @@ import { deleteDealer } from '@/features/parameters/dealers/api/server-actions'
 import {
   columns,
   DealersColumn
-} from '@/app/(qualisu)/parameters/dealers/dealers-columns'
+} from '@/app/(qualisu)/parameters/dealers/columns'
 
 interface DealersClientProps {
   id?: string
@@ -42,11 +42,11 @@ const DealersClient = ({ id, dealers }: DealersClientProps) => {
           Add New
         </Button>
       </div>
-      <DataTable
+      <DataTable<DealersColumn, string>
         columns={columns}
         data={dealers}
         filterKey="code"
-        onDelete={handleDelete}
+        isAdd={true}
       />
     </div>
   )

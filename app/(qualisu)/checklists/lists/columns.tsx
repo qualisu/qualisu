@@ -3,26 +3,35 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDown } from 'lucide-react'
 
-import { FormStatus, Groups } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Actions } from './actions'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import {
+  ChecklistQuestions,
+  ChecklistTypes,
+  FormStatus,
+  VehicleGroup,
+  VehicleModel,
+  Vehicles,
+  Points
+} from '@prisma/client'
 
-export type DealersColumn = {
+export type ChecklistsColumn = {
   id: string
-  code: string
+  type: ChecklistTypes
   name: string
-  country: string
-  state?: string
-  city?: string
+  desc: string
+  points: Points[]
+  groups: VehicleGroup[]
+  models: VehicleModel[]
+  vehicles: Vehicles[]
+  questions: ChecklistQuestions[]
+  userId: string
   status: FormStatus
-  createdAt: string
-  updatedAt: string
+  createdAt: Date
 }
 
-export const columns: ColumnDef<DealersColumn>[] = [
+export const columns: ColumnDef<ChecklistsColumn>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -46,20 +55,6 @@ export const columns: ColumnDef<DealersColumn>[] = [
     enableHiding: false
   },
   {
-    accessorKey: 'code',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Code
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    }
-  },
-  {
     accessorKey: 'name',
     header: ({ column }) => {
       return (
@@ -71,59 +66,96 @@ export const columns: ColumnDef<DealersColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="px-4">{row.original.name || '-'}</div>
     }
   },
   {
-    accessorKey: 'country',
+    accessorKey: 'type',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Country
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    }
-  },
-  {
-    accessorKey: 'status',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Status
+          Checklist Type
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
     },
     cell: ({ row }) => {
       return (
-        <Badge
-          className={cn(
-            row.original.status === FormStatus.Active
-              ? 'bg-green-600'
-              : 'bg-red-600',
-            'capitalize'
-          )}
-        >
-          {row.original.status}
-        </Badge>
+        <div className="px-4">
+          {row.original.type.slice(0, 1).toUpperCase() +
+            row.original.type.slice(1).toLowerCase() || '-'}
+        </div>
       )
     }
   },
   {
-    accessorKey: 'createdAt',
-    header: 'Created Date'
+    accessorKey: 'groups',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Groups
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      return (
+        <div className="px-4">
+          {row.original.groups.map((group) => group.name).join(', ')}
+        </div>
+      )
+    }
   },
   {
-    accessorKey: 'updatedAt',
-    header: 'Updated Date'
+    accessorKey: 'models',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Models
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      return (
+        <div className="px-4">
+          {row.original.models.map((model) => model.name).join(', ')}
+        </div>
+      )
+    }
   },
-
+  {
+    accessorKey: 'points',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Points
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      return (
+        <div className="px-4">
+          {row.original.points.map((point) => point.name).join(', ')}
+        </div>
+      )
+    }
+  },
   {
     id: 'actions',
     header: 'Actions',

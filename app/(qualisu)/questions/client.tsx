@@ -3,20 +3,29 @@
 'use client'
 
 import { useState } from 'react'
-import { ChecklistTypes } from '@prisma/client'
+import { ChecklistTypes, QuestionCatalog, Tags } from '@prisma/client'
 import { BarChart2, ClipboardCheck, Factory } from 'lucide-react'
 
-import QuestionSteps from '@/features/questions/components/question-steps'
 import { SubCategoriesColumn } from '../parameters/categories/sub-category-columns'
+import QuestionSteps from '@/features/questions/components/question-steps'
+import QuestionForm from '@/features/questions/components/question-form'
+import { useRouter } from 'next/navigation'
 
 interface QuestionStepsPageProps {
   subCategories: SubCategoriesColumn[]
+  tags: Tags[]
+  question?: QuestionCatalog & { tags: Tags[] }
+  mode?: 'create' | 'edit'
 }
 
 export default function QuestionStepsPage({
-  subCategories
+  subCategories,
+  tags,
+  question,
+  mode
 }: QuestionStepsPageProps) {
   const [selectedOption, setSelectedOption] = useState<string>()
+  const router = useRouter()
 
   const preferenceOptions = [
     {
@@ -65,13 +74,28 @@ export default function QuestionStepsPage({
     }
   ]
 
+  if (mode === 'edit') {
+    return (
+      <QuestionForm
+        mode={mode}
+        onBack={() => router.back()}
+        question={question}
+        questionTypes={preferenceOptions.flatMap((opt) => opt.types)}
+        subCategories={subCategories}
+        tags={tags}
+        uploadedFiles={{ images: [], docs: [] }}
+      />
+    )
+  }
+
   return (
     <QuestionSteps
       subCategories={subCategories}
       options={preferenceOptions}
       selectedOption={selectedOption}
       onSelect={setSelectedOption}
-      onBack={() => console.log('Back clicked')}
+      tags={tags}
+      question={question}
     />
   )
 }

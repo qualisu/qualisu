@@ -1,4 +1,4 @@
-import { DealersColumn } from '@/app/(qualisu)/parameters/dealers/dealers-columns'
+import { DealersColumn } from '@/app/(qualisu)/parameters/dealers/columns'
 import { getDealerById } from '@/features/parameters/dealers/api/server-actions'
 import DealerForm from '@/features/parameters/dealers/components/dealers-form'
 

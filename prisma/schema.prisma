@@ -143,9 +143,9 @@ enum SimulatorStatus {
 
 enum AnswerType {
   YesNo
-  Text
-  MultiChoice
-  Numeric
+  MinMax
+  Barcode
+  Brand
 }
 
 enum ChecklistTypes {
@@ -196,14 +196,13 @@ model VehicleModel {
 }
 
 model Vehicles {
-  saseNo         String       @id @unique
+  saseNo         String   @id @unique
   warStart       DateTime
   country        String
   warEnd         DateTime
   vehicleGroupId String
   vehicleModelId String
   prodDate       DateTime
-  checklists     Checklists[]
 
   groups VehicleGroup @relation(fields: [vehicleGroupId], references: [id])
   models VehicleModel @relation(fields: [vehicleModelId], references: [id])
@@ -220,8 +219,9 @@ model Points {
   userGroups UserGroups[]
   status     FormStatus     @default(Active)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @default(now()) @updatedAt
+  Simulators Simulators[]
 }
 
 model FailureCategory {
@@ -240,6 +240,7 @@ model FailureSubCategory {
   name           String         @unique @db.Text
   mainCategoryId String
   failureCodes   FailureCodes[]
+  tags           Tags[]
   status         FormStatus     @default(Active)
 
   createdAt DateTime @default(now())
@@ -248,9 +249,6 @@ model FailureSubCategory {
   mainCategory    FailureCategory   @relation(fields: [mainCategoryId], references: [id], onDelete: Cascade)
   reports         Report[]          @relation("ReportSubCategory")
   QuestionCatalog QuestionCatalog[]
-
-  @@unique([name, mainCategoryId])
-  @@index([mainCategoryId])
 }
 
 model FailureCodes {
@@ -263,10 +261,14 @@ model FailureCodes {
 }
 
 model Dealers {
-  id           String  @id @default(cuid())
+  id           String     @id @default(cuid())
+  country      String
+  state        String?
+  city         String
   name         String
-  code         String  @unique
+  code         String     @unique
   checklistsId String?
+  active       FormStatus @default(Active)
   // claims       Claims[]
 
   checklists Checklists? @relation(fields: [checklistsId], references: [id], onDelete: Cascade)
@@ -275,35 +277,37 @@ model Dealers {
 }
 
 model Tags {
-  id     String  @id @default(cuid())
-  name   String  @unique @db.Text
-  qCatId String?
-
-  qCatalog QuestionCatalog? @relation(fields: [qCatId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@index([qCatId])
+  id        String               @id @default(cuid())
+  name      String               @unique @db.Text
+  questions QuestionCatalog[]
+  category  FailureSubCategory[]
 }
 
 // Question Catalog
 model QuestionCatalog {
-  id            String             @id @default(cuid())
-  name          String
-  desc          String?
-  type          ChecklistTypes     @default(STANDART)
-  grade         QuestionGrade      @default(C)
-  subCategoryId String
-  tags          Tags[]
-  images        String[]
-  docs          String[]
-  version       Int                @default(1)
-  isLatest      Boolean            @default(true)
-  prevId        String?            @unique
-  subCategory   FailureSubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
-  prev          QuestionCatalog?   @relation("Versions", fields: [prevId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  next          QuestionCatalog?   @relation("Versions")
+  id               String                 @id @default(cuid())
+  name             String
+  desc             String?
+  type             ChecklistTypes         @default(STANDART)
+  grade            QuestionGrade          @default(C)
+  answerType       AnswerType?
+  minValue         Int?
+  maxValue         Int?
+  valueUnit        String?
+  subCategoryId    String
+  tags             Tags[]
+  images           String[]
+  docs             String[]
+  checklists       ChecklistQuestions[]
+  version          Int                    @default(1)
+  isLatest         Boolean                @default(true)
+  prevId           String?                @unique
+  isActive         FormStatus             @default(Active)
+  passiveFrequency Int                    @default(10)
+  usageTrackers    QuestionUsageTracker[]
+  subCategory      FailureSubCategory     @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  prev             QuestionCatalog?       @relation("Versions", fields: [prevId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  next             QuestionCatalog?       @relation("Versions")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -311,49 +315,44 @@ model QuestionCatalog {
   @@index([prevId])
 }
 
-model cQuestions {
-  id String @id @default(cuid())
-
-  name   String
-  desc   String?
-  type   ChecklistTypes @default(STANDART)
-  grade  QuestionGrade  @default(B)
-  images String[]
-  docs   String[]
-
+model ChecklistQuestions {
+  id          String          @id @default(cuid())
   checklistId String
-
-  qCatalogId  String? // Reference to original qCatalog for tracking
-  qCatalogVer Int     @default(1) // Version of qCatalog when added
-
-  checklist Checklists @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  questionId  String
+  version     Int             @default(1)
+  checklist   Checklists      @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  question    QuestionCatalog @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
+  @@unique([checklistId, questionId])
   @@index([checklistId])
+  @@index([questionId])
 }
 
 // Checklists
 model Checklists {
   id String @id @default(cuid())
 
-  type      ChecklistTypes @default(STANDART)
-  name      String         @unique
+  name      String               @unique
   desc      String?
+  type      ChecklistTypes       @default(STANDART)
   userId    String?
   points    Points[]
   itemNo    String[]
   groups    VehicleGroup[]
   models    VehicleModel[]
-  vehicles  Vehicles[]
-  questions cQuestions[]
+  questions ChecklistQuestions[]
   dealers   Dealers[]
+  images    String[]
+  docs      String[]
+  status    FormStatus           @default(Active)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @default(now()) @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Simulators Simulators[]
 
   @@index([userId])
 }
@@ -395,4 +394,52 @@ model Report {
 
   @@index([mainCategoryName])
   @@index([subCategoryName])
+}
+
+// Question Usage Tracking
+model QuestionUsageTracker {
+  id         String          @id @default(cuid())
+  questionId String
+  type       ChecklistTypes
+  modelId    String
+  pointId    String
+  useCount   Int             @default(0)
+  question   QuestionCatalog @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([questionId, type, modelId, pointId])
+  @@index([questionId])
+}
+
+// Simulators
+model Simulators {
+  id           String          @id @default(cuid())
+  itemNo       String
+  status       SimulatorStatus @default(InProgress)
+  pointsId     String
+  checklistsId String
+  answers      Answers[]
+  points       Points          @relation(fields: [pointsId], references: [id])
+  checklists   Checklists      @relation(fields: [checklistsId], references: [id])
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @default(now()) @updatedAt
+
+  @@index([pointsId])
+  @@index([checklistsId])
+}
+
+model Answers {
+  id           String     @id @default(cuid())
+  answer       String
+  description  String
+  images       String[]
+  questionId   String
+  simulatorsId String
+  simulators   Simulators @relation(fields: [simulatorsId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+
+  @@index([simulatorsId])
 }

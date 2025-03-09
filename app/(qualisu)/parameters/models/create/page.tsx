@@ -5,10 +5,9 @@ import { GroupsColumn } from '../../groups/columns'
 import { ModelsColumn } from '../columns'
 
 interface Props {
-  searchParams: {
-    id?: string
-  }
+  searchParams: { id?: string }
 }
+
 export default async function CreatePage({ searchParams }: Props) {
   const model = await getModelById(searchParams.id ?? '')
   const groups = await getGroups()

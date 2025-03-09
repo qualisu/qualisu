@@ -1,5 +1,5 @@
 import ChecklistClient from './client'
-import { getChecklists } from '@/features/questions/api/server-actions'
+import { getChecklists } from '@/features/checklists/api/server-actions'
 
 const ChecklistPage = async () => {
   const checklists = await getChecklists()

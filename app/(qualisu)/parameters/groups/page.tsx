@@ -1,5 +1,5 @@
 import { GroupsColumn } from '@/app/(qualisu)/parameters/groups/columns'
-import GroupClient from '@/app/(qualisu)/parameters/groups/group-client'
+import GroupClient from '@/app/(qualisu)/parameters/groups/client'
 import { getGroups } from '@/features/parameters/groups/api/server-actions'
 
 const VehicleGroupsPage = async () => {

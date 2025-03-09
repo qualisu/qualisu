@@ -3,11 +3,11 @@
 import { db } from '@/lib/db'
 import { format } from 'date-fns'
 import { NextResponse } from 'next/server'
-import { FormStatus, Points, Groups } from '@prisma/client'
+import { FormStatus, Points, VehicleGroup } from '@prisma/client'
 import { PointsColumn } from '@/app/(qualisu)/parameters/points/columns'
 
 type PointWithGroups = Points & {
-  groups: Groups[]
+  groups: VehicleGroup[]
   createdAt: string
   updatedAt: string
 }
@@ -123,8 +123,11 @@ export const getPoints = async (
 
     const formattedPoints = points.map((point) => ({
       ...point,
-      createdAt: format(point.createdAt ?? new Date(), 'dd/MM/yyyy'),
-      updatedAt: format(point.updatedAt ?? new Date(), 'dd/MM/yyyy')
+      createdAt: format(point.createdAt, 'yyyy-MM-dd'),
+      updatedAt: format(point.updatedAt, 'yyyy-MM-dd'),
+      groups: point.groups.map((group) => ({
+        ...group
+      }))
     }))
 
     return formattedPoints as PointWithGroups[]

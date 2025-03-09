@@ -1,8 +1,17 @@
 'use server'
 
-import { AnswerFormValues } from '@/app/(qualisu)/simulators/[id]/answer-form'
 import { db } from '@/lib/db'
 import { format } from 'date-fns'
+import { SimulatorStatus } from '@prisma/client'
+import { trackChecklistQuestions } from '@/features/checklists/api/server-actions'
+
+interface AnswerFormValues {
+  answer: string
+  images: string[]
+  description: string
+  simulator: string
+  questionId: string
+}
 
 export const getChecklists = async ({
   pointId,
@@ -19,27 +28,20 @@ export const getChecklists = async ({
       },
       include: {
         questions: true,
-        checklistTypes: true,
-        simulators: true,
         points: true,
         groups: true,
-        models: true,
-        vehicle: true
+        models: true
       }
     }
 
     if (itemNo) {
-      const vinCodePart = itemNo.substring(0, 11)
-
-      // First find the vehicle with this vinCode
       const vehicle = await db.vehicles.findFirst({
-        where: { saseNo: vinCodePart },
-        include: { models: true }
+        where: { saseNo: itemNo }
       })
 
       if (vehicle) {
         baseQuery.where.AND.push({
-          models: { some: { id: vehicle.models.id } }
+          models: { some: { id: vehicle.vehicleModelId } }
         })
       }
     }
@@ -56,9 +58,7 @@ export const getChecklists = async ({
       return {
         ...item,
         createdAt: format(item.createdAt, 'dd/MM/yyyy'),
-        updatedAt: format(item.updatedAt, 'dd/MM/yyyy'),
-        dateStart: item.dateStart ? format(item.dateStart, 'dd/MM/yyyy') : null,
-        dateEnd: item.dateEnd ? format(item.dateEnd, 'dd/MM/yyyy') : null
+        updatedAt: format(item.updatedAt, 'dd/MM/yyyy')
       }
     })
 
@@ -151,16 +151,8 @@ export const createSimulator = async ({
     }
 
     const res = await db.simulators.create({
-      data: {
-        itemNo,
-        pointsId,
-        checklistsId,
-        status: SimulatorStatus.Continue
-      },
-      include: {
-        points: true,
-        checklists: { include: { questions: true } }
-      }
+      data: { itemNo, pointsId, checklistsId, status: SimulatorStatus.Planned },
+      include: { points: true, checklists: { include: { questions: true } } }
     })
 
     return res
@@ -170,15 +162,27 @@ export const createSimulator = async ({
   }
 }
 
-export const getSimulatorById = async (id: string) => {
-  console.log('id', id)
-
+export async function getSimulatorById(id: string) {
   try {
     const simulator = await db.simulators.findUnique({
       where: { id },
+      include: { checklists: { include: { questions: true } }, points: true }
+    })
+
+    return simulator
+  } catch (error) {
+    console.error('Error fetching simulator:', error)
+    throw new Error('Failed to fetch simulator')
+  }
+}
+
+export const finishSimulators = async (id: string) => {
+  try {
+    // Get the simulator with its checklist
+    const simulator = await db.simulators.findUnique({
+      where: { id },
       include: {
-        points: true,
-        checklists: { include: { questions: true } }
+        checklists: true
       }
     })
 
@@ -186,9 +190,53 @@ export const getSimulatorById = async (id: string) => {
       throw new Error('Simulator not found')
     }
 
-    return simulator
+    // Update simulator status
+    await db.simulators.update({
+      where: { id },
+      data: {
+        status: SimulatorStatus.Completed
+      }
+    })
+
+    // Track question usage for the checklist
+    await trackChecklistQuestions(simulator.checklistsId)
+
+    return { success: true }
   } catch (error) {
-    console.error('Get simulator error:', error)
-    return null
+    console.error('Finish simulator error:', error)
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to finish simulator'
+    }
+  }
+}
+
+export async function getVehicleByItemNo(itemNo: string) {
+  try {
+    const vehicle = await db.vehicles.findUnique({
+      where: {
+        saseNo: itemNo
+      },
+      include: {
+        models: true,
+        groups: true
+      }
+    })
+
+    if (!vehicle) {
+      throw new Error('Vehicle not found')
+    }
+
+    return {
+      model: vehicle.models.name,
+      country: vehicle.country,
+      chassisNo: vehicle.saseNo,
+      fertNo: vehicle.saseNo,
+      zobasNo: vehicle.saseNo
+    }
+  } catch (error) {
+    console.error('Error fetching vehicle:', error)
+    throw error
   }
 }

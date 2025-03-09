@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { FormStatus } from '@prisma/client'
+import { FormStatus, VehicleModel } from '@prisma/client'
 import { format } from 'date-fns'
 import { NextResponse } from 'next/server'
 
@@ -69,31 +69,25 @@ export const getModelById = async (id: string) => {
     })
   } catch (error) {
     console.error(error)
-    return null
+    return []
   }
 }
 
 export const getModels = async () => {
   try {
-    const res = await db.vehicleModel.findMany({
-      include: { groups: true },
-      orderBy: { createdAt: 'desc' }
+    const models = await db.vehicleModel.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { groups: true }
     })
 
-    const formattedRes = res.map((item) => ({
-      id: item.id,
-      name: item.name,
-      status: item.status,
-      image: item.image,
-      vehicleGroupId: item.vehicleGroupId,
-      group: item.groups.name,
-      createdAt: format(item.createdAt, 'dd/MM/yyyy'),
-      updatedAt: format(item.updatedAt, 'dd/MM/yyyy')
+    return models.map((model) => ({
+      ...model,
+      groups: [model.groups],
+      createdAt: format(model.createdAt, 'dd-MM-yyyy'),
+      updatedAt: format(model.updatedAt, 'dd-MM-yyyy')
     }))
-
-    return formattedRes
   } catch (error) {
-    console.error('Error fetching models:', error)
+    console.error(error)
     return []
   }
 }
@@ -113,5 +107,26 @@ export const deleteModels = async (ids: string[]) => {
   } catch (error) {
     console.error(error)
     return new NextResponse('Failed to delete vehicle models', { status: 500 })
+  }
+}
+
+export const importModels = async (file: File): Promise<any> => {
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/import/models', {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to import models')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error importing models:', error)
+    throw error
   }
 }

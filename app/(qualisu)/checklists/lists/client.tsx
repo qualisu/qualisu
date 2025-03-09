@@ -1,11 +1,12 @@
 'use client'
 
-import { DataTable } from '@/components/data-table'
-import { Button } from '@/components/ui/button'
-import { MessageCircleQuestion, PlusIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { ChecklistsColumn, columns } from './checklists-columns'
+import { MessageCircleQuestion, PlusIcon } from 'lucide-react'
+
 import Heading from '@/components/heading'
+import { Button } from '@/components/ui/button'
+import { DataTable } from '@/components/data-table'
+import { ChecklistsColumn, columns } from './columns'
 
 interface QuestionProps {
   id?: string
@@ -23,10 +24,7 @@ const ChecklistClient = ({ checklists }: QuestionProps) => {
           description="Manage your checklists"
           icon={<MessageCircleQuestion />}
         />
-        <Button
-          size="sm"
-          onClick={() => router.push('/checklists/lists/create')}
-        >
+        <Button size="sm" onClick={() => router.push('/checklists')}>
           <PlusIcon className="size-4 mr-2" />
           Add New
         </Button>
@@ -34,8 +32,9 @@ const ChecklistClient = ({ checklists }: QuestionProps) => {
       <DataTable<ChecklistsColumn, any>
         columns={columns}
         data={checklists}
-        filterKey="type"
+        filterKey="name"
         isAdd={false}
+        facetedFilters={[]}
       />
     </div>
   )

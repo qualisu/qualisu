@@ -3,7 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDown } from 'lucide-react'
 
-import { FormStatus, Groups } from '@prisma/client'
+import { FormStatus, VehicleGroup } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Actions } from './actions'
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 export type PointsColumn = {
   id: string
   name: string
-  groups: Groups[]
+  groups: VehicleGroup[]
   status: FormStatus
   createdAt: Date
   updatedAt: Date

@@ -34,24 +34,22 @@ export const getVehicleGroupById = async (id: string) => {
   return formattedData
 }
 
-export const getGroups = async () => {
+export const getGroups = async (): Promise<GroupsColumn[]> => {
   try {
     const res = await db.vehicleGroup.findMany({
       orderBy: { createdAt: 'desc' }
     })
 
-    const formattedData: GroupsColumn[] = res.map((item) => ({
-      id: item.id,
-      name: item.name,
-      status: item.status,
-      createdAt: format(item.createdAt, 'dd-MM-yyyy'),
-      updatedAt: format(item.updatedAt, 'dd-MM-yyyy')
+    return res.map((group) => ({
+      id: group.id,
+      name: group.name,
+      status: group.status,
+      createdAt: format(group.createdAt, 'dd-MM-yyyy'),
+      updatedAt: format(group.updatedAt, 'dd-MM-yyyy')
     }))
-
-    return formattedData
   } catch (error) {
     console.error(error)
-    return null
+    return []
   }
 }
 

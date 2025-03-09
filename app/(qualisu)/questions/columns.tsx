@@ -1,6 +1,6 @@
 'use client'
 
-import { QuestionCatalog } from '@prisma/client'
+import { AnswerType, QuestionCatalog } from '@prisma/client'
 import { Tags } from '@prisma/client'
 import { QuestionGrade } from '@prisma/client'
 import { ChecklistTypes } from '@prisma/client'
@@ -20,6 +20,10 @@ export type QuestionsColumn = {
   prevId: string
   prev: QuestionCatalog
   next: QuestionCatalog
+  answerType: AnswerType
+  minValue?: number
+  maxValue?: number
+  valueUnit?: string
 }
 
 export const columns: ColumnDef<QuestionsColumn>[] = []

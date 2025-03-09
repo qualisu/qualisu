@@ -1,17 +1,11 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { UserGroups } from '@prisma/client'
+import { UserGroups, Points, User as PrismaUser } from '@prisma/client'
 import bcrypt from 'bcrypt'
 
-export type User = {
-  id: string
-  name: string | null
-  email: string | null
-  emailVerified: Date | null
-  role: 'ADMIN' | 'VIEWER' | 'EDITOR' | 'MOBILE'
-  dept: 'ARGE' | 'URGE' | 'GKK' | 'PK' | 'FQM' | 'SSH'
-  userGroups: UserGroups[]
+export type User = Omit<PrismaUser, 'userGroups'> & {
+  userGroups: (UserGroups & { points: Points[] })[]
 }
 
 export type UserUpdate = User & {
@@ -23,9 +17,7 @@ export type UserUpdate = User & {
 export const getUsers = async (): Promise<User[]> => {
   try {
     const users = await db.user.findMany({
-      include: {
-        userGroups: true
-      }
+      include: { userGroups: { include: { points: true } } }
     })
 
     return users
@@ -62,7 +54,11 @@ export const updateUser = async (user: UserUpdate): Promise<User> => {
       },
       data: updateData,
       include: {
-        userGroups: true
+        userGroups: {
+          include: {
+            points: true
+          }
+        }
       }
     })
 
@@ -107,7 +103,7 @@ export const createUser = async (data: {
       }
     })
 
-    return user
+    return user as User
   } catch (error) {
     console.error('Error creating user:', error)
     throw new Error('Failed to create user')

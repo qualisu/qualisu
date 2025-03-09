@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Points, User, UserGroups } from '@prisma/client'
+import { Points } from '@prisma/client'
 
 import {
   Form,
@@ -24,11 +24,15 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
-import { getChecklists } from '@/features/simulators/api/server-actions'
+import {
+  getChecklists,
+  getVehicleByItemNo
+} from '@/features/simulators/api/server-actions'
+import { User } from '@/actions/users'
 
 interface SelectPanelProps {
-  user: User & { userGroups: (UserGroups & { points: Points[] })[] }
-  onChecklistChange: (newChecklist: any[]) => void
+  users: User[]
+  onChecklistChange: (newChecklist: any[], vehicleData?: any) => void
 }
 
 export const formSchema = z.object({
@@ -40,12 +44,12 @@ export const formSchema = z.object({
 export type FormValues = z.infer<typeof formSchema>
 
 export default function SelectPanel({
-  user,
+  users,
   onChecklistChange
 }: SelectPanelProps) {
   const { toast } = useToast()
   const [filteredPoints, setFilteredPoints] = useState<Points[]>([])
-  const [filteredGroups, setFilteredGroups] = useState(user.userGroups)
+  const [filteredGroups, setFilteredGroups] = useState(users[0].userGroups)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -61,9 +65,16 @@ export default function SelectPanel({
   const onSubmit = async (values: FormValues) => {
     try {
       let checklists: any[] = []
+      let vehicleData: {
+        model: string
+        country: string
+        chassisNo: string
+      } | null = null
+
       if (values.pointsId) {
         if (values.itemNo) {
           localStorage.setItem('checklist_item_no', values.itemNo)
+          vehicleData = await getVehicleByItemNo(values.itemNo)
         }
 
         checklists =
@@ -72,7 +83,7 @@ export default function SelectPanel({
             itemNo: values.itemNo
           })) || []
       }
-      onChecklistChange(checklists)
+      onChecklistChange(checklists, vehicleData)
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -95,8 +106,10 @@ export default function SelectPanel({
     form.setValue('pointsId', '')
 
     if (value) {
-      const selectedGroup = user.userGroups.find((group) => group.id === value)
-      setFilteredPoints(selectedGroup?.points || [])
+      const selectedGroup = users[0].userGroups.find(
+        (group) => group.id === value
+      )
+      setFilteredPoints((selectedGroup as any)?.points || [])
     } else {
       setFilteredPoints([])
     }

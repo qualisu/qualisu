@@ -3,7 +3,7 @@ import { SessionProvider } from 'next-auth/react'
 
 import './globals.css'
 
-import { Inter, Quicksand } from 'next/font/google'
+import { Inter } from 'next/font/google'
 
 import { cn } from '@/lib/utils'
 import { auth } from '@/auth'
@@ -19,7 +19,10 @@ export const metadata: Metadata = {
   description: 'Everything about quality.'
 }
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap'
+})
 
 export default async function RootLayout({
   children
@@ -31,7 +34,7 @@ export default async function RootLayout({
   return (
     <SessionProvider session={session}>
       <html lang="en" suppressHydrationWarning>
-        <body className={cn('light:bg-gray-50')}>
+        <body className={cn('light:bg-gray-50', inter.className)}>
           <ThemeProvider
             attribute="class"
             defaultTheme="light"
@@ -43,9 +46,7 @@ export default async function RootLayout({
             </div>
             <ModalProvider />
             <Toaster />
-            <QueryProvider>
-              <div className={inter.className}>{children}</div>
-            </QueryProvider>
+            <QueryProvider>{children}</QueryProvider>
           </ThemeProvider>
         </body>
       </html>

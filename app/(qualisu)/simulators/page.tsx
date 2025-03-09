@@ -1,17 +1,17 @@
 import { getPoints } from '@/features/parameters/points/api/server-actions'
-import SimulatorClient from './SimulatorClient'
+import SimulatorClient from './client'
 import NotFoundChecklists from './not-found'
-import { getUser } from '@/actions/auth'
+import { getUsers } from '@/actions/users'
 
 const Simulators = async () => {
   const points = await getPoints()
-  const user = await getUser()
+  const users = await getUsers()
 
-  if (!points || !user) {
+  if (!points || !users) {
     return <NotFoundChecklists />
   }
 
-  return <SimulatorClient user={user} />
+  return <SimulatorClient users={users} />
 }
 
 export default Simulators

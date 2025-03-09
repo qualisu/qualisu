@@ -34,11 +34,8 @@ export function ReportForm() {
         return
       }
 
-      console.log('Öneri isteniyor:', debouncedDescription)
-
       // Önbellek kontrolü
       if (cache[debouncedDescription]) {
-        console.log('Önbellekten alındı:', cache[debouncedDescription])
         setSuggestions(cache[debouncedDescription])
         return
       }
@@ -51,7 +48,6 @@ export function ReportForm() {
         })
 
         const data = await response.json()
-        console.log('API yanıtı:', data)
 
         setCache((prev) => ({
           ...prev,
@@ -61,7 +57,6 @@ export function ReportForm() {
         setSuggestions(data.autoSuggestions || [])
 
         if (data.autoSuggestions?.[0]) {
-          console.log('İlk öneri seçildi:', data.autoSuggestions[0])
           setSelectedMain(data.autoSuggestions[0].mainCategory)
           setSelectedSub(data.autoSuggestions[0].subCategory)
         }

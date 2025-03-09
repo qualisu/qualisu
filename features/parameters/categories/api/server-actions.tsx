@@ -11,7 +11,7 @@ interface SubCategories {
   id?: string
   name: string
   status: FormStatus
-  failureCodes: string[]
+  failureCodes: { connect: Array<{ code: string }> }
   mainCategoryId: string
 }
 
@@ -136,53 +136,16 @@ export const createCategory = async ({
   }
 }
 
-export const createSubCategory = async ({
-  id,
-  name,
-  failureCodes,
-  mainCategoryId,
-  status
-}: SubCategories): Promise<any> => {
+export const createSubCategory = async (data: SubCategories) => {
   try {
-    const existingSubCategory = await getSubCategoryById(id)
+    const result = await db.failureSubCategory.create({ data })
 
-    if (id) {
-      await db.failureSubCategory.update({
-        where: { id },
-        data: { failureCodes: { set: [] } }
-      })
-
-      console.log(failureCodes)
-
-      return await db.failureSubCategory.update({
-        where: { id },
-        data: {
-          name,
-          status,
-          mainCategoryId,
-          failureCodes: {
-            connect: failureCodes.map((failure) => ({ code: failure }))
-          }
-        }
-      })
-    } else {
-      if (existingSubCategory) {
-        return new NextResponse('Sub Category already exists', { status: 400 })
-      } else {
-        return await db.failureSubCategory.create({
-          data: {
-            name,
-            status,
-            mainCategoryId,
-            failureCodes: {
-              connect: failureCodes.map((failure) => ({ code: failure }))
-            }
-          }
-        })
-      }
-    }
+    // Prisma sonucunu temiz nesneye dönüştür
+    const plainObject = JSON.parse(JSON.stringify(result))
+    return plainObject
   } catch (error) {
-    return new NextResponse()
+    console.error('Error creating subcategory:', error)
+    throw error
   }
 }
 

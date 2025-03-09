@@ -32,7 +32,7 @@ import {
   createDealer,
   deleteDealer
 } from '@/features/parameters/dealers/api/server-actions'
-import { DealersColumn } from '@/app/(qualisu)/parameters/dealers/dealers-columns'
+import { DealersColumn } from '@/app/(qualisu)/parameters/dealers/columns'
 import useLocation from '@/hooks/use-location'
 import { ICity, IState } from 'country-state-city'
 
