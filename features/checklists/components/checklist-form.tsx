@@ -385,7 +385,7 @@ export default function ChecklistForm({
                   <FormItem className="col-span-4">
                     <FormLabel>Type</FormLabel>
                     <Select
-                      disabled={true}
+                      disabled={mode === 'edit'}
                       onValueChange={field.onChange}
                       value={selectedOption || field.value}
                       defaultValue={selectedOption}

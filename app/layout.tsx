@@ -16,7 +16,8 @@ import ThemeProvider from '@/providers/theme-provider'
 
 export const metadata: Metadata = {
   title: 'Qualisu',
-  description: 'Everything about quality.'
+  description: 'Everything about quality.',
+  viewport: 'width=device-width, initial-scale=1'
 }
 
 const inter = Inter({

@@ -270,7 +270,12 @@ export default function QuestionSteps({
         tags={tags}
         subCategories={subCategories}
         selectedOption={selectedOption}
-        questionTypes={selectedTypes}
+        questionTypes={
+          question && question.type
+            ? options.find((opt) => opt.types.includes(question.type as string))
+                ?.types || selectedTypes
+            : selectedTypes
+        }
         uploadedFiles={uploadedFiles}
         onBack={() => setShowUpload(true)}
       />
