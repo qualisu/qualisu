@@ -1,15 +1,15 @@
 import PointClient from './client'
-import { PointsColumn } from './columns'
 import { getPoints } from '@/features/parameters/points/api/server-actions'
+import { getGroups } from '@/features/parameters/groups/api/server-actions'
 
 const PointsPage = async () => {
-  const data = await getPoints()
+  const [points, groups] = await Promise.all([getPoints(), getGroups()])
 
-  if (!data) {
+  if (!points || !groups) {
     return <div>No data found</div>
   }
 
-  return <PointClient data={data} />
+  return <PointClient data={points} />
 }
 
 export default PointsPage

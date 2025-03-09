@@ -1,10 +1,6 @@
 'use client'
 
-import {
-  type UserGroups,
-  type Points,
-  type ChecklistTypes
-} from '@prisma/client'
+import { type UserGroups, type Points, cTypes } from '@prisma/client'
 import {
   Dialog,
   DialogContent,
@@ -23,11 +19,9 @@ interface UserGroupDialogProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
-  userGroup?:
-    | (UserGroups & { points: Points[]; types: ChecklistTypes[] })
-    | null
+  userGroup?: (UserGroups & { points: Points[]; types: cTypes[] }) | null
   points: Points[]
-  types: ChecklistTypes[]
+  types: cTypes[]
 }
 
 export const UserGroupDialog = ({
@@ -76,7 +70,7 @@ export const UserGroupDialog = ({
     ? {
         name: userGroup.name,
         points: userGroup.points.map((point) => point.id),
-        types: userGroup.types.map((type) => type.id)
+        types: userGroup.types
       }
     : {
         name: '',

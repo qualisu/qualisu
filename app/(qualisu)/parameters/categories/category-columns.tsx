@@ -3,7 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDown } from 'lucide-react'
 
-import { FormStatus, Groups } from '@prisma/client'
+import { FormStatus } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Actions } from './actions'
@@ -53,6 +53,9 @@ export const columns: ColumnDef<CategoriesColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.name}</div>
     }
   },
   {
@@ -75,7 +78,7 @@ export const columns: ColumnDef<CategoriesColumn>[] = [
             row.original.status === FormStatus.Active
               ? 'bg-green-600'
               : 'bg-red-600',
-            'capitalize'
+            'capitalize ml-4'
           )}
         >
           {row.original.status}
@@ -91,7 +94,6 @@ export const columns: ColumnDef<CategoriesColumn>[] = [
     accessorKey: 'updatedAt',
     header: 'Updated Date'
   },
-
   {
     id: 'actions',
     header: 'Actions',

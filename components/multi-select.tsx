@@ -27,10 +27,6 @@ import {
   CommandSeparator
 } from '@/components/ui/command'
 
-/**
- * Variants for the multi-select component to handle different styles.
- * Uses class-variance-authority (cva) to define different styles based on "variant" prop.
- */
 const multiSelectVariants = cva(
   'm-1 transition ease-in-out delay-150 hover:-translate-y-1 hover:scale-110 duration-300',
   {
@@ -68,6 +64,7 @@ interface MultiSelectProps
     value: string
     /** Optional icon component to display alongside the option. */
     icon?: React.ComponentType<{ className?: string }>
+    details?: any
   }[]
 
   /**
@@ -115,6 +112,51 @@ interface MultiSelectProps
    * Optional, can be used to add custom styles.
    */
   className?: string
+
+  /**
+   * The current selected values.
+   * Optional, defaults to an empty array.
+   */
+  value?: string[]
+
+  /**
+   * If true, disables the multi-select component.
+   * Optional, defaults to false.
+   */
+  disabled?: boolean
+
+  /**
+   * Callback function triggered when a search is performed.
+   * Receives the search string.
+   */
+  onSearch?: (search: string) => void
+
+  /**
+   * If true, indicates that the multi-select component is loading.
+   * Optional, defaults to false.
+   */
+  loading?: boolean
+
+  /**
+   * Callback function triggered when scrolling to the bottom of the component.
+   */
+  onScrollToBottom?: () => void
+
+  /**
+   * Callback function to render a custom option.
+   * Receives the option object and returns a React node.
+   */
+  renderOption?: (option: {
+    label: string
+    value: string
+    details?: any
+  }) => React.ReactNode
+
+  /**
+   * Callback function to determine if an option should be included in the search results.
+   * Receives the option and the search string.
+   */
+  searchable?: (option: any, search: string) => boolean
 }
 
 export const MultiSelect = React.forwardRef<
@@ -133,6 +175,13 @@ export const MultiSelect = React.forwardRef<
       modalPopover = false,
       asChild = false,
       className,
+      value,
+      disabled,
+      onSearch,
+      loading,
+      onScrollToBottom,
+      renderOption,
+      searchable,
       ...props
     },
     ref
@@ -141,6 +190,12 @@ export const MultiSelect = React.forwardRef<
       React.useState<string[]>(defaultValue)
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
     const [isAnimating, setIsAnimating] = React.useState(false)
+    const [inputValue, setInputValue] = React.useState('')
+    const [filteredOptions, setFilteredOptions] = React.useState(options)
+
+    React.useEffect(() => {
+      setFilteredOptions(options)
+    }, [options])
 
     const handleInputKeyDown = (
       event: React.KeyboardEvent<HTMLInputElement>
@@ -148,6 +203,7 @@ export const MultiSelect = React.forwardRef<
       if (event.key === 'Enter') {
         setIsPopoverOpen(true)
       } else if (event.key === 'Backspace' && !event.currentTarget.value) {
+        // Only handle removing selected values when input is empty
         const newSelectedValues = [...selectedValues]
         newSelectedValues.pop()
         setSelectedValues(newSelectedValues)
@@ -286,53 +342,79 @@ export const MultiSelect = React.forwardRef<
           <Command>
             <CommandInput
               placeholder="Search..."
-              onKeyDown={handleInputKeyDown}
+              value={inputValue}
+              onValueChange={(value) => {
+                const filtered = options.filter((option) =>
+                  searchable
+                    ? searchable(option, value)
+                    : option.value.toLowerCase().startsWith(value.toLowerCase())
+                )
+                setFilteredOptions(filtered)
+                setInputValue(value)
+                if (onSearch) onSearch(value)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Backspace') {
+                  const newValue = inputValue.slice(0, -1)
+                  const filtered = options.filter((option) =>
+                    searchable
+                      ? searchable(option, newValue)
+                      : option.value
+                          .toLowerCase()
+                          .startsWith(newValue.toLowerCase())
+                  )
+                  setFilteredOptions(filtered)
+                }
+              }}
+              disabled={disabled}
             />
-            <CommandList>
+            <CommandList
+              onScroll={(e) => {
+                if (onScrollToBottom) {
+                  const target = e.target as HTMLDivElement
+                  if (
+                    target.scrollHeight - target.scrollTop ===
+                    target.clientHeight
+                  ) {
+                    onScrollToBottom()
+                  }
+                }
+              }}
+            >
               <CommandEmpty>No results found.</CommandEmpty>
               <CommandGroup>
-                <CommandItem
-                  key="all"
-                  onSelect={toggleAll}
-                  className="cursor-pointer"
-                >
-                  <div
-                    className={cn(
-                      'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                      selectedValues.length === options.length
-                        ? 'bg-primary text-primary-foreground'
-                        : 'opacity-50 [&_svg]:invisible'
-                    )}
-                  >
-                    <CheckIcon className="h-4 w-4" />
-                  </div>
-                  <span>(Select All)</span>
-                </CommandItem>
-                {options.map((option) => {
-                  const isSelected = selectedValues.includes(option.value)
-                  return (
-                    <CommandItem
-                      key={option.value}
-                      onSelect={() => toggleOption(option.value)}
-                      className="cursor-pointer"
-                    >
-                      <div
-                        className={cn(
-                          'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                          isSelected
-                            ? 'bg-primary text-primary-foreground'
-                            : 'opacity-50 [&_svg]:invisible'
-                        )}
+                {loading ? (
+                  <CommandItem disabled>Loading...</CommandItem>
+                ) : (
+                  filteredOptions.map((option) => {
+                    const isSelected = selectedValues.includes(option.value)
+                    return (
+                      <CommandItem
+                        key={option.value}
+                        onSelect={() => toggleOption(option.value)}
                       >
-                        <CheckIcon className="h-4 w-4" />
-                      </div>
-                      {option.icon && (
-                        <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                      )}
-                      <span>{option.label}</span>
-                    </CommandItem>
-                  )
-                })}
+                        <div
+                          className={cn(
+                            'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                            isSelected
+                              ? 'bg-primary text-primary-foreground'
+                              : 'opacity-50 [&_svg]:invisible'
+                          )}
+                        >
+                          <CheckIcon className={cn('h-4 w-4')} />
+                        </div>
+                        {option.icon && (
+                          <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        )}
+                        {renderOption ? (
+                          renderOption(option)
+                        ) : (
+                          <span>{option.label}</span>
+                        )}
+                      </CommandItem>
+                    )
+                  })
+                )}
               </CommandGroup>
               <CommandSeparator />
               <CommandGroup>

@@ -6,23 +6,21 @@ import { format } from 'date-fns'
 import { NextResponse } from 'next/server'
 
 export const getFailureByCode = async (code: string) => {
-  return await db.failures.findUnique({
+  return await db.failureCodes.findUnique({
     where: { code }
   })
 }
 
-export const getFailureById = async (id: string) => {
-  const res = await db.failures.findUnique({
-    where: { id }
+export const getFailureById = async (code: string) => {
+  const res = await db.failureCodes.findUnique({
+    where: { code }
   })
 
   const formattedData = {
-    id: res?.id,
     code: res?.code,
-    name: res?.name,
-    status: res?.status,
-    createdAt: format(res?.createdAt ?? new Date(), 'dd-MM-yyyy'),
-    updatedAt: format(res?.updatedAt ?? new Date(), 'dd-MM-yyyy')
+    descEng: res?.descEng,
+    descTurk: res?.descTurk,
+    status: res?.status
   }
 
   return formattedData
@@ -30,46 +28,44 @@ export const getFailureById = async (id: string) => {
 
 export const getFailures = async () => {
   try {
-    const res = await db.failures.findMany({
-      orderBy: { createdAt: 'desc' }
+    const res = await db.failureCodes.findMany({
+      orderBy: { code: 'asc' }
     })
 
     const formattedData: FailuresColumn[] = res.map((item) => ({
-      id: item.id,
       code: item.code,
-      name: item.name,
-      status: item.status,
-      createdAt: format(item.createdAt, 'dd-MM-yyyy'),
-      updatedAt: format(item.updatedAt, 'dd-MM-yyyy')
+      descEng: item.descEng,
+      descTurk: item.descTurk,
+      status: item.status
     }))
 
     return formattedData
   } catch (error) {
-    console.error(error)
-    return new NextResponse('Failed to fetch failures', { status: 500 })
+    console.error('Error fetching failures:', error)
+    return [] // Return empty array instead of NextResponse
   }
 }
 
 export const createFailure = async ({
   code,
-  name,
-  status,
-  id
+  descEng,
+  descTurk,
+  status
 }: FailuresColumn): Promise<any> => {
   try {
     const existingFailure = await getFailureByCode(code)
 
-    if (id) {
-      return await db.failures.update({
-        where: { id },
-        data: { code, name, status }
+    if (code) {
+      return await db.failureCodes.update({
+        where: { code },
+        data: { code, descEng, descTurk, status }
       })
     } else {
       if (existingFailure) {
         return new NextResponse('Failure already exists', { status: 400 })
       } else {
-        return await db.failures.create({
-          data: { code, name, status }
+        return await db.failureCodes.create({
+          data: { code, descEng, descTurk, status }
         })
       }
     }
@@ -78,10 +74,10 @@ export const createFailure = async ({
   }
 }
 
-export const deleteFailure = async (id: string) => {
+export const deleteFailure = async (code: string) => {
   try {
-    await db.failures.delete({
-      where: { id }
+    await db.failureCodes.delete({
+      where: { code }
     })
   } catch (error) {
     console.error(error)
@@ -89,10 +85,10 @@ export const deleteFailure = async (id: string) => {
   }
 }
 
-export const deleteFailures = async (ids: string[]) => {
+export const deleteFailures = async (codes: string[]) => {
   try {
-    await db.failures.deleteMany({
-      where: { id: { in: ids } }
+    await db.failureCodes.deleteMany({
+      where: { code: { in: codes } }
     })
   } catch (error) {
     console.error(error)

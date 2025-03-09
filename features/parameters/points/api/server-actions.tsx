@@ -3,11 +3,13 @@
 import { db } from '@/lib/db'
 import { format } from 'date-fns'
 import { NextResponse } from 'next/server'
-import { FormStatus, Points, Groups } from '@prisma/client'
+import { FormStatus, Points, VehicleGroup } from '@prisma/client'
 import { PointsColumn } from '@/app/(qualisu)/parameters/points/columns'
 
 type PointWithGroups = Points & {
-  groups: Groups[]
+  groups: VehicleGroup[]
+  createdAt: string
+  updatedAt: string
 }
 
 interface CreatePointInput {
@@ -94,8 +96,8 @@ export const getPointById = async (id: string) => {
       name: point?.name,
       status: point?.status,
       groups: point?.groups,
-      createdAt: format(point?.createdAt ?? new Date(), 'dd-MM-yyyy'),
-      updatedAt: format(point?.updatedAt ?? new Date(), 'dd-MM-yyyy')
+      createdAt: new Date(point?.createdAt ?? new Date()),
+      updatedAt: new Date(point?.updatedAt ?? new Date())
     }
 
     return formattedData
@@ -105,13 +107,30 @@ export const getPointById = async (id: string) => {
   }
 }
 
-export const getPoints = async (): Promise<PointWithGroups[]> => {
+export const getPoints = async (
+  userGroupId?: string
+): Promise<PointWithGroups[]> => {
   try {
     const points = await db.points.findMany({
-      where: { status: 'Active' },
+      where: {
+        status: 'Active',
+        ...(userGroupId && {
+          groups: { some: { id: userGroupId } }
+        })
+      },
       include: { groups: true }
     })
-    return points
+
+    const formattedPoints = points.map((point) => ({
+      ...point,
+      createdAt: format(point.createdAt, 'yyyy-MM-dd'),
+      updatedAt: format(point.updatedAt, 'yyyy-MM-dd'),
+      groups: point.groups.map((group) => ({
+        ...group
+      }))
+    }))
+
+    return formattedPoints as PointWithGroups[]
   } catch (error) {
     console.error('Error fetching points:', error)
     return []

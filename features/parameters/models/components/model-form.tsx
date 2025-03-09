@@ -34,12 +34,12 @@ import { useState } from 'react'
 import { FileUpload } from '@/components/file-upload'
 import { createModel, deleteModel } from '../api/server-actions'
 import { GroupsColumn } from '@/app/(qualisu)/parameters/groups/columns'
-import { VehicleModelsColumn } from '@/app/(qualisu)/parameters/models/columns'
+import { ModelsColumn } from '@/app/(qualisu)/parameters/models/columns'
 
 interface Props {
   id?: string
   groups: GroupsColumn[]
-  initialData: VehicleModelsColumn
+  initialData: ModelsColumn
 }
 
 export const modelSchema = z.object({
@@ -50,7 +50,7 @@ export const modelSchema = z.object({
     .min(3, { message: 'Name must be atleast 3 characters long.' }),
   status: z.enum([FormStatus.Active, FormStatus.Passive]),
   groupsId: z.string().min(1, { message: 'Vehicle group is required.' }),
-  image: z.string().min(1, { message: 'Image is required.' })
+  image: z.string().optional()
 })
 
 export const ModelForm = ({ id, initialData, groups }: Props) => {
@@ -68,7 +68,7 @@ export const ModelForm = ({ id, initialData, groups }: Props) => {
 
   const onSubmit = async (values: z.infer<typeof modelSchema>) => {
     try {
-      await createModel(values)
+      await createModel({ ...values, image: values.image || '' })
       toast({
         variant: 'success',
         title: '🎉 Vehicle model created',

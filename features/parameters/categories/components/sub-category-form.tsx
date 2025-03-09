@@ -34,12 +34,12 @@ import {
 } from '@/features/parameters/categories/api/server-actions'
 import { CategoriesColumn } from '@/app/(qualisu)/parameters/categories/category-columns'
 import { SubCategoriesColumn } from '@/app/(qualisu)/parameters/categories/sub-category-columns'
-import { FailuresColumn } from '@/app/(qualisu)/parameters/failures/columns'
 import { MultiSelect } from '@/components/multi-select'
+import { FailuresColumn } from '@/app/(qualisu)/parameters/failures/columns'
 
 interface Props {
   id?: string
-  failures: FailuresColumn[]
+  failureCodes: FailuresColumn[]
   categories: CategoriesColumn[]
   initialData: SubCategoriesColumn
 }
@@ -50,8 +50,8 @@ export const subCategorySchema = z.object({
     .string()
     .trim()
     .min(3, { message: 'Name must be atleast 3 characters long.' }),
-  categoryId: z.string().min(1, { message: 'Please select a category.' }),
-  failures: z.array(
+  mainCategoryId: z.string().min(1, { message: 'Please select a category.' }),
+  failureCodes: z.array(
     z.string().min(1, { message: 'Please select at least one failure.' })
   ),
   status: z.enum([FormStatus.Active, FormStatus.Passive])
@@ -62,16 +62,15 @@ export type FormValues = z.infer<typeof subCategorySchema>
 export default function SubCategoryForm({
   id,
   initialData,
-  failures,
+  failureCodes,
   categories
 }: Props) {
+  const safeFailures = failureCodes ?? []
+
   const { toast } = useToast()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [selectedFailures, setSelectedFailures] = useState<string[]>(
-    initialData?.failures?.map((failure) => failure.id)
-  )
 
   const form = useForm<FormValues>({
     resolver: zodResolver(subCategorySchema),
@@ -79,8 +78,8 @@ export default function SubCategoryForm({
       id: initialData?.id,
       name: initialData?.name,
       status: initialData?.status,
-      categoryId: initialData?.categoryId,
-      failures: initialData?.failures?.map((failure) => failure.id) ?? []
+      mainCategoryId: initialData?.mainCategoryId,
+      failureCodes: initialData?.failureCodes?.map((fc) => fc.code) ?? []
     }
   })
 
@@ -114,7 +113,7 @@ export default function SubCategoryForm({
         description: 'Failure deleted successfully'
       })
       router.refresh()
-      router.push('/parameters/failures')
+      router.push('/parameters/failureCodes')
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -181,7 +180,7 @@ export default function SubCategoryForm({
               )}
             />
             <FormField
-              name="categoryId"
+              name="mainCategoryId"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
@@ -211,23 +210,33 @@ export default function SubCategoryForm({
               )}
             />
             <FormField
-              name="failures"
+              name="failureCodes"
               control={form.control}
               render={({ field }) => (
                 <FormItem className="w-full">
-                  <FormLabel>Failures</FormLabel>
+                  <FormLabel>failureCodes</FormLabel>
                   <FormControl>
                     <MultiSelect
-                      options={failures.map((failure) => ({
-                        value: failure.id,
-                        label: failure.name
+                      options={safeFailures.map((failure) => ({
+                        key: failure.code,
+                        value: failure.code,
+                        label: `${failure.code} - ${failure.descTurk}`,
+                        searchText: `${failure.code} ${failure.descEng} ${failure.descTurk}`
                       }))}
                       onValueChange={(value) => {
-                        form.setValue('failures', selectedFailures)
                         field.onChange(value)
                       }}
                       defaultValue={field.value}
                       maxCount={2}
+                      searchable={(option, search) => {
+                        const searchTerm = search.trim().toLowerCase()
+                        if (searchTerm === '') return true
+
+                        return (
+                          option.value.toLowerCase().includes(searchTerm) ||
+                          option.searchText.toLowerCase().includes(searchTerm)
+                        )
+                      }}
                     />
                   </FormControl>
                   <FormMessage />

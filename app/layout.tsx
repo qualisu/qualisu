@@ -3,7 +3,7 @@ import { SessionProvider } from 'next-auth/react'
 
 import './globals.css'
 
-import { Inter, Quicksand } from 'next/font/google'
+import { Inter } from 'next/font/google'
 
 import { cn } from '@/lib/utils'
 import { auth } from '@/auth'
@@ -14,15 +14,15 @@ import ModalProvider from '@/providers/modal-provider'
 import QueryProvider from '@/providers/query-provider'
 import ThemeProvider from '@/providers/theme-provider'
 
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700']
-})
-
 export const metadata: Metadata = {
   title: 'Qualisu',
   description: 'Everything about quality.'
 }
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap'
+})
 
 export default async function RootLayout({
   children

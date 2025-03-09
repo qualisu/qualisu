@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button'
 import { PlusIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { CategoriesColumn, columns } from './category-columns'
-import { deleteFailure } from '@/features/parameters/failures/api/server-actions'
 import { SubCategoriesColumn, subColumns } from './sub-category-columns'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
+import { deleteMainCategory } from '@/features/parameters/categories/api/server-actions'
 
 interface FailuresClientProps {
   id?: string
@@ -25,7 +25,7 @@ const CategoriesClient = ({
 
   const handleDelete = async () => {
     if (!id) return
-    await deleteFailure(id)
+    await deleteMainCategory(id)
     router.refresh()
   }
 
@@ -62,11 +62,11 @@ const CategoriesClient = ({
             </div>
           </div>
           <Separator className="my-4" />
-          <DataTable
+          <DataTable<CategoriesColumn, any>
             columns={columns}
             data={categories}
             filterKey="name"
-            onDelete={handleDelete}
+            isAdd={false}
           />
         </TabsContent>
         <TabsContent
@@ -93,11 +93,11 @@ const CategoriesClient = ({
             </div>
           </div>
           <Separator className="my-4" />
-          <DataTable
+          <DataTable<SubCategoriesColumn, any>
             columns={subColumns}
             data={subCategories}
             filterKey="name"
-            onDelete={handleDelete}
+            isAdd={false}
           />
         </TabsContent>
       </Tabs>

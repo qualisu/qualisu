@@ -1,39 +1,24 @@
 'use server'
 
-import { AnswerFormValues } from '@/app/(qualisu)/simulators/[id]/answer-form'
 import { db } from '@/lib/db'
-import { SimulatorStatus } from '@prisma/client'
 import { format } from 'date-fns'
-import { NextResponse } from 'next/server'
+import { SimulatorStatus } from '@prisma/client'
+import { trackChecklistQuestions } from '@/features/checklists/api/server-actions'
 
-export const getIndependentChecklists = async (pointId: string) => {
-  try {
-    const res = await db.checklists.findMany({
-      orderBy: { createdAt: 'desc' },
-      where: { points: { some: { id: pointId } } },
-      include: { questions: true, checklistTypes: true }
-    })
-    return res
-  } catch (error) {
-    console.error(error)
-    return new NextResponse('Failed to fetch questions', { status: 500 })
-  }
+interface AnswerFormValues {
+  answer: string
+  images: string[]
+  description: string
+  simulator: string
+  questionId: string
 }
 
-export const getMandatoryChecklists = async ({
+export const getChecklists = async ({
   pointId,
-  groupId,
-  modelId,
-  vehicleId,
-  itemNo,
-  searchQuery
+  itemNo
 }: {
   pointId: string
-  groupId?: string
-  modelId?: string
-  vehicleId?: string
   itemNo?: string
-  searchQuery?: string
 }) => {
   try {
     const baseQuery: any = {
@@ -43,44 +28,22 @@ export const getMandatoryChecklists = async ({
       },
       include: {
         questions: true,
-        checklistTypes: true,
-        simulators: true,
         points: true,
         groups: true,
-        models: true,
-        vehicle: true
+        models: true
       }
     }
 
     if (itemNo) {
-      baseQuery.where.itemNo = { has: itemNo }
-    }
-
-    if (vehicleId) {
-      baseQuery.where.AND.push({
-        vehicle: { some: { id: vehicleId } }
+      const vehicle = await db.vehicles.findFirst({
+        where: { saseNo: itemNo }
       })
-    }
 
-    if (modelId) {
-      baseQuery.where.AND.push({
-        models: { some: { id: modelId } }
-      })
-    }
-
-    if (groupId) {
-      baseQuery.where.AND.push({
-        groups: { some: { id: groupId } }
-      })
-    }
-
-    if (searchQuery) {
-      baseQuery.where.AND.push({
-        OR: [
-          { name: { contains: searchQuery, mode: 'insensitive' } },
-          { description: { contains: searchQuery, mode: 'insensitive' } }
-        ]
-      })
+      if (vehicle) {
+        baseQuery.where.AND.push({
+          models: { some: { id: vehicle.vehicleModelId } }
+        })
+      }
     }
 
     if (baseQuery.where.AND.length === 0) {
@@ -95,15 +58,13 @@ export const getMandatoryChecklists = async ({
       return {
         ...item,
         createdAt: format(item.createdAt, 'dd/MM/yyyy'),
-        updatedAt: format(item.updatedAt, 'dd/MM/yyyy'),
-        dateStart: item.dateStart ? format(item.dateStart, 'dd/MM/yyyy') : null,
-        dateEnd: item.dateEnd ? format(item.dateEnd, 'dd/MM/yyyy') : null
+        updatedAt: format(item.updatedAt, 'dd/MM/yyyy')
       }
     })
 
     return formatData
   } catch (error) {
-    console.error('Error in getMandatoryChecklists:', error)
+    console.error('Error in getChecklists:', error)
     return []
   }
 }
@@ -167,52 +128,115 @@ export const createSimulator = async ({
 }) => {
   try {
     const existingSimulator = await db.simulators.findFirst({
-      where: { itemNo, pointsId }
+      where: {
+        itemNo,
+        pointsId,
+        checklistsId
+      },
+      include: {
+        points: true,
+        checklists: { include: { questions: true } }
+      }
     })
 
     if (existingSimulator) return existingSimulator
 
+    // First verify that the checklist exists
+    const checklist = await db.checklists.findUnique({
+      where: { id: checklistsId }
+    })
+
+    if (!checklist) {
+      throw new Error('Checklist not found')
+    }
+
     const res = await db.simulators.create({
-      data: {
-        itemNo,
-        pointsId,
-        status: SimulatorStatus.Continue,
-        checklistsId
-      }
+      data: { itemNo, pointsId, checklistsId, status: SimulatorStatus.Planned },
+      include: { points: true, checklists: { include: { questions: true } } }
     })
 
     return res
   } catch (error) {
     console.error('Create simulator error:', error)
+    return null
   }
 }
 
-export const finishSimulators = async (simulator: string) => {
+export async function getSimulatorById(id: string) {
   try {
-    await db.simulators.update({
-      where: { id: simulator },
-      data: { status: SimulatorStatus.Completed }
+    const simulator = await db.simulators.findUnique({
+      where: { id },
+      include: { checklists: { include: { questions: true } }, points: true }
     })
+
+    return simulator
+  } catch (error) {
+    console.error('Error fetching simulator:', error)
+    throw new Error('Failed to fetch simulator')
+  }
+}
+
+export const finishSimulators = async (id: string) => {
+  try {
+    // Get the simulator with its checklist
+    const simulator = await db.simulators.findUnique({
+      where: { id },
+      include: {
+        checklists: true
+      }
+    })
+
+    if (!simulator) {
+      throw new Error('Simulator not found')
+    }
+
+    // Update simulator status
+    await db.simulators.update({
+      where: { id },
+      data: {
+        status: SimulatorStatus.Completed
+      }
+    })
+
+    // Track question usage for the checklist
+    await trackChecklistQuestions(simulator.checklistsId)
+
+    return { success: true }
   } catch (error) {
     console.error('Finish simulator error:', error)
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to finish simulator'
+    }
   }
 }
 
-export const getSimulatorId = async ({
-  itemNo,
-  pointsId,
-  checklistsId
-}: {
-  itemNo: string
-  pointsId: string
-  checklistsId: string
-}) => {
+export async function getVehicleByItemNo(itemNo: string) {
   try {
-    const res = await db.simulators.findFirst({
-      where: { itemNo, pointsId, checklistsId }
+    const vehicle = await db.vehicles.findUnique({
+      where: {
+        saseNo: itemNo
+      },
+      include: {
+        models: true,
+        groups: true
+      }
     })
-    return res?.id
+
+    if (!vehicle) {
+      throw new Error('Vehicle not found')
+    }
+
+    return {
+      model: vehicle.models.name,
+      country: vehicle.country,
+      chassisNo: vehicle.saseNo,
+      fertNo: vehicle.saseNo,
+      zobasNo: vehicle.saseNo
+    }
   } catch (error) {
-    console.error('Get simulator ID error:', error)
+    console.error('Error fetching vehicle:', error)
+    throw error
   }
 }

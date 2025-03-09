@@ -3,7 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDown } from 'lucide-react'
 
-import { FormStatus, Groups } from '@prisma/client'
+import { FormStatus } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Actions } from './actions'
@@ -11,12 +11,10 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 export type FailuresColumn = {
-  id: string
   code: string
-  name: string
+  descEng: string
+  descTurk: string
   status: FormStatus
-  createdAt: string
-  updatedAt: string
 }
 
 export const columns: ColumnDef<FailuresColumn>[] = [
@@ -54,20 +52,43 @@ export const columns: ColumnDef<FailuresColumn>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.code}</div>
     }
   },
   {
-    accessorKey: 'name',
+    accessorKey: 'descEng',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Name
+          Description (English)
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.descEng}</div>
+    }
+  },
+  {
+    accessorKey: 'descTurk',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Description (Turkish)
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      return <div className="ml-4">{row.original.descTurk}</div>
     }
   },
   {
@@ -90,7 +111,7 @@ export const columns: ColumnDef<FailuresColumn>[] = [
             row.original.status === FormStatus.Active
               ? 'bg-green-600'
               : 'bg-red-600',
-            'capitalize'
+            'capitalize ml-4'
           )}
         >
           {row.original.status}
@@ -99,17 +120,8 @@ export const columns: ColumnDef<FailuresColumn>[] = [
     }
   },
   {
-    accessorKey: 'createdAt',
-    header: 'Created Date'
-  },
-  {
-    accessorKey: 'updatedAt',
-    header: 'Updated Date'
-  },
-
-  {
     id: 'actions',
     header: 'Actions',
-    cell: ({ row }) => <Actions id={row.original.id} />
+    cell: ({ row }) => <Actions code={row.original.code} />
   }
 ]

@@ -1,11 +1,10 @@
 import ModelClient from '@/app/(qualisu)/parameters/models/client'
-import { VehicleModelsColumn } from '@/app/(qualisu)/parameters/models/columns'
 import { getModels } from '@/features/parameters/models/api/server-actions'
-
+import { ModelsColumn } from '@/app/(qualisu)/parameters/models/columns'
 const VehicleModelsPage = async () => {
   const data = await getModels()
 
-  return <ModelClient data={data as unknown as VehicleModelsColumn[]} />
+  return <ModelClient data={data as ModelsColumn[]} />
 }
 
 export default VehicleModelsPage

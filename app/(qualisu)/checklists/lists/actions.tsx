@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Edit, MoreHorizontal, Plus, Trash } from 'lucide-react'
+
+import { Edit, MoreHorizontal, Trash } from 'lucide-react'
 
 import {
   DropdownMenu,
@@ -10,56 +11,58 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { useState, useCallback } from 'react'
+import { deleteChecklist } from '@/features/checklists/api/server-actions'
+import { toast } from 'sonner'
+import { useState } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { AlertModal } from '@/components/alert-modal'
-import { deleteChecklist } from '@/features/checklists/questions/api/server-actions'
-
 type Props = {
   id: string
 }
 
 export const Actions = ({ id }: Props) => {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  const router = useRouter()
   const { toast } = useToast()
 
-  const onDelete = useCallback(async () => {
+  const handleEdit = () => {
+    router.push(`/checklists/?id=${id}`)
+  }
+
+  const onDelete = async () => {
     if (!id) return
     try {
       setLoading(true)
       await deleteChecklist(id)
       toast({
         variant: 'success',
-        title: '🎉 Checklist silindi',
-        description: 'Checklist başarıyla silindi.'
+        title: '🎉 Category deleted',
+        description: 'Category deleted successfully'
       })
-      router.push('/checklists/lists')
       router.refresh()
+      router.push('/checklists/lists')
     } catch (error) {
       toast({
         variant: 'destructive',
-        title: '🚨 Hata',
-        description: 'Bir şeyler ters gitti.'
+        title: '🚨 Error',
+        description: 'Something went wrong'
       })
     } finally {
       setLoading(false)
       setOpen(false)
     }
-  }, [id, router, toast])
+  }
 
   return (
     <>
       <AlertModal
         isOpen={open}
-        onClose={() => {
-          setOpen(false)
-        }}
+        onClose={() => setOpen(false)}
         onConfirm={onDelete}
         loading={loading}
       />
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="size-8 p-0">
@@ -68,17 +71,11 @@ export const Actions = ({ id }: Props) => {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={() => router.push(`/checklists/lists/create?id=${id}`)}
-          >
+          <DropdownMenuItem onClick={handleEdit}>
             <Edit className="size-4 mr-2" />
             Edit
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              setOpen(true)
-            }}
-          >
+          <DropdownMenuItem onClick={() => setOpen(true)}>
             <Trash className="size-4 mr-2" />
             Delete
           </DropdownMenuItem>

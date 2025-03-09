@@ -6,7 +6,12 @@ export const SettingsSchema = z
     name: z.optional(z.string()),
     isTwoFactorEnabled: z.optional(z.boolean()),
     email: z.optional(z.string().email()),
-    role: z.enum([UserRole.ADMIN, UserRole.USER]),
+    role: z.enum([
+      UserRole.ADMIN,
+      UserRole.VIEWER,
+      UserRole.EDITOR,
+      UserRole.MOBILE
+    ]),
     dept: z.enum([
       Departments.ARGE,
       Departments.FQM,

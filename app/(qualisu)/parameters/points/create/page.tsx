@@ -3,7 +3,6 @@ import { getPointById } from '@/features/parameters/points/api/server-actions'
 import { PointsColumn } from '@/app/(qualisu)/parameters/points/columns'
 import { GroupsColumn } from '@/app/(qualisu)/parameters/groups/columns'
 import PointForm from '@/features/parameters/points/components/point-form'
-import { Groups, Points } from '@prisma/client'
 
 interface Props {
   searchParams: {

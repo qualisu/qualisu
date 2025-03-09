@@ -24,13 +24,13 @@ import {
 } from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
 import Heading from '@/components/heading'
-import { BadgeAlert, Group, Trash } from 'lucide-react'
+import { BadgeAlert, Trash } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { AlertModal } from '@/components/alert-modal'
 import { useState } from 'react'
 import {
   createCategory,
-  deleteCategory
+  deleteMainCategory
 } from '@/features/parameters/categories/api/server-actions'
 import { CategoriesColumn } from '@/app/(qualisu)/parameters/categories/category-columns'
 
@@ -84,7 +84,7 @@ export default function CategoryForm({ id, initialData }: Props) {
     if (!id) return
     try {
       setLoading(true)
-      await deleteCategory(id)
+      await deleteMainCategory(id)
       toast({
         variant: 'success',
         title: '🎉 Category deleted',
@@ -202,7 +202,7 @@ export default function CategoryForm({ id, initialData }: Props) {
                 type="submit"
                 disabled={!isValid || isSubmitting}
               >
-                Save
+                {id ? 'Update' : 'Create'}
               </Button>
             </div>
           </form>

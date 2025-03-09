@@ -1,6 +1,13 @@
+'use client'
+
 import * as z from 'zod'
 
-import { type User, type UserGroups } from '@prisma/client'
+import {
+  Departments,
+  UserRole,
+  type User,
+  type UserGroups
+} from '@prisma/client'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -21,6 +28,8 @@ import {
 } from '@/components/ui/select'
 import { MultiSelect } from '../multi-select'
 import { Button } from '../ui/button'
+import { getRoleAndDepartmentValues } from '@/actions/users'
+import { useEffect, useState } from 'react'
 
 const formSchema = z
   .object({
@@ -32,7 +41,7 @@ const formSchema = z
       .transform((val) => (val === '' ? undefined : val))
       .pipe(z.string().min(6, 'Şifre en az 6 karakter olmalıdır').optional()),
     confirmPassword: z.string().optional(),
-    role: z.enum(['ADMIN', 'USER']).optional(),
+    role: z.enum(['ADMIN', 'VIEWER', 'EDITOR', 'MOBILE']).optional(),
     dept: z.enum(['ARGE', 'URGE', 'GKK', 'PK', 'FQM', 'SSH']).optional(),
     userGroups: z.array(z.string()).optional(),
     emailVerified: z.date().nullable().optional(),
@@ -57,8 +66,8 @@ interface UserFormProps {
     email: string | null
     password: string
     confirmPassword: string
-    role: 'ADMIN' | 'USER'
-    dept: 'ARGE' | 'URGE' | 'GKK' | 'PK' | 'FQM' | 'SSH'
+    role: UserRole
+    dept: Departments
     userGroups: UserGroups[]
     emailVerified: Date | null
     id: string
@@ -84,11 +93,23 @@ export function UserForm({
       ...defaultValues,
       password: '',
       confirmPassword: '',
-      role: defaultValues.role || undefined,
-      dept: defaultValues.dept || undefined,
+      role: defaultValues.role || UserRole.VIEWER,
+      dept: defaultValues.dept || Departments.PK,
       userGroups: defaultValues.userGroups?.map((group) => group.id) || []
     }
   })
+
+  const [roleOptions, setRoleOptions] = useState<string[]>([])
+  const [deptOptions, setDeptOptions] = useState<string[]>([])
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      const { roles, departments } = await getRoleAndDepartmentValues()
+      setRoleOptions(roles)
+      setDeptOptions(departments)
+    }
+    loadOptions()
+  }, [])
 
   return (
     <Form {...form}>
@@ -172,8 +193,11 @@ export function UserForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="USER">User</SelectItem>
+                  {roleOptions.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage className="col-span-3 col-start-2" />
@@ -194,12 +218,11 @@ export function UserForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="ARGE">ARGE</SelectItem>
-                  <SelectItem value="URGE">URGE</SelectItem>
-                  <SelectItem value="GKK">GKK</SelectItem>
-                  <SelectItem value="PK">PK</SelectItem>
-                  <SelectItem value="FQM">FQM</SelectItem>
-                  <SelectItem value="SSH">SSH</SelectItem>
+                  {deptOptions.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage className="col-span-3 col-start-2" />

@@ -1,36 +1,36 @@
-import { db } from '@/lib/db'
-import { getChecklistById } from '@/features/checklists/questions/api/server-actions'
-import Client from '@/app/(qualisu)/simulators/[id]/client'
-import NotFoundChecklists from '@/app/(qualisu)/simulators/not-found'
+import { notFound } from 'next/navigation'
+import {
+  getSimulatorById,
+  getVehicleByItemNo
+} from '@/features/simulators/api/server-actions'
+import { getQuestionsByChecklistId } from '@/features/checklists/api/server-actions'
+import SimulatorQuestions from './questions'
 
-export default async function SimulatorPage({
-  params,
-  searchParams
-}: {
+interface SimulatorPageProps {
   params: { id: string }
-  searchParams: { simulator?: string }
-}) {
-  const checklist = await getChecklistById(params.id)
-  const simulator = searchParams.simulator
-  const isValidSimulator = await db.simulators.findFirst({
-    where: { id: simulator }
-  })
+}
 
-  const answers = await db.answers.findMany({
-    where: {
-      simulatorsId: simulator
-    }
-  })
+export default async function SimulatorPage({ params }: SimulatorPageProps) {
+  const simulator = await getSimulatorById(params.id)
 
-  if (!checklist.id || !simulator || !isValidSimulator) {
-    return <NotFoundChecklists />
+  if (!simulator) {
+    notFound()
+  }
+
+  const questions = await getQuestionsByChecklistId(simulator.checklistsId)
+  const vehicleInfo = await getVehicleByItemNo(simulator.itemNo)
+
+  const simulatorWithVehicle = {
+    ...simulator,
+    ...vehicleInfo
   }
 
   return (
-    <Client
-      questions={checklist.questions as any}
-      simulator={simulator}
-      answers={answers}
-    />
+    <div className="container mx-auto py-6">
+      <SimulatorQuestions
+        simulator={simulatorWithVehicle}
+        questions={questions}
+      />
+    </div>
   )
 }

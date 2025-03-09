@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Points, ChecklistTypes } from '@prisma/client'
+import { Points, cTypes } from '@prisma/client'
 
 import {
   Form,
@@ -30,7 +30,7 @@ interface UserGroupFormProps {
   onSubmit: (data: UserGroupFormData) => void
   onCancel: () => void
   points: Points[]
-  types: ChecklistTypes[]
+  types: cTypes[]
   isEdit: boolean
   loading: boolean
 }
@@ -108,8 +108,8 @@ export const UserGroupForm = ({
                 <MultiSelect
                   className="w-full col-span-3"
                   options={types.map((type) => ({
-                    value: type.id,
-                    label: type.name
+                    value: type,
+                    label: type
                   }))}
                   onValueChange={(value) => {
                     field.onChange(value)

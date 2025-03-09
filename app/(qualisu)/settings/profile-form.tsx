@@ -161,7 +161,9 @@ const ProfileForm = () => {
                   </FormControl>
                   <SelectContent>
                     <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
-                    <SelectItem value={UserRole.USER}>User</SelectItem>
+                    <SelectItem value={UserRole.VIEWER}>Viewer</SelectItem>
+                    <SelectItem value={UserRole.EDITOR}>Editor</SelectItem>
+                    <SelectItem value={UserRole.MOBILE}>Mobile</SelectItem>
                   </SelectContent>
                 </Select>
               </FormControl>
