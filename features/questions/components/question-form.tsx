@@ -4,7 +4,14 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, HelpCircle, AlertTriangle } from 'lucide-react'
+import {
+  ChevronDown,
+  HelpCircle,
+  AlertTriangle,
+  FileText,
+  Upload,
+  X
+} from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Command,
@@ -23,6 +30,7 @@ import { CheckIcon } from '@radix-ui/react-icons'
 import { cn } from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid'
 import { debounce } from 'lodash'
+import React from 'react'
 
 import {
   ChecklistTypes,
@@ -56,10 +64,18 @@ import { SubCategoriesColumn } from '@/app/(qualisu)/parameters/categories/sub-c
 import {
   createQuestion,
   updateQuestion,
-  searchSimilarQuestions
+  searchSimilarQuestions,
+  getQuestionCatalogById
 } from '../api/server-actions'
 import { TagsInput } from '@/components/tags'
 import { QuestionHistory } from './question-history'
+import { createClient } from '@supabase/supabase-js'
+import { Card } from '@/components/ui/card'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const questionSchema = z.object({
   id: z.string().optional(),
@@ -122,6 +138,105 @@ interface QuestionFormProps {
   tags: TagWithCategory[]
 }
 
+// SimilarQuestionsAlert component for displaying similar questions
+interface SimilarQuestionsAlertProps {
+  similarQuestions: SimilarQuestion[]
+  onSelectQuestion: (questionId: string) => void
+}
+
+function SimilarQuestionsAlert({
+  similarQuestions,
+  onSelectQuestion
+}: SimilarQuestionsAlertProps) {
+  if (similarQuestions.length === 0) return null
+
+  const hasSameQuestion = similarQuestions.some(
+    (q) => q.similarityScore === 1.0
+  )
+
+  return (
+    <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+      <h3 className="flex items-center gap-2 font-medium mb-2 text-sm">
+        <AlertTriangle
+          className={hasSameQuestion ? 'text-red-600' : 'text-yellow-600'}
+          size={18}
+        />
+        <span className={hasSameQuestion ? 'text-red-800' : 'text-yellow-800'}>
+          {hasSameQuestion
+            ? 'UYARI! Aynı soru zaten mevcut!'
+            : 'Dikkat! Benzer sorular bulundu'}
+        </span>
+      </h3>
+      <p
+        className={`text-sm mb-3 ${
+          hasSameQuestion ? 'text-red-700' : 'text-yellow-700'
+        }`}
+      >
+        {hasSameQuestion
+          ? 'Aşağıdaki sorunun birebir aynısı zaten sistemde kayıtlı. Mükerrer soru oluşturmak yasaktır!'
+          : 'Aşağıdaki benzer soruları kontrol edin ve mükerrer soru oluşturmaktan kaçının:'}
+      </p>
+      <div className="space-y-2 max-h-60 overflow-y-auto">
+        {similarQuestions.map((sq) => (
+          <div
+            key={sq.id}
+            className={`bg-white p-3 rounded border transition-colors cursor-pointer ${
+              sq.similarityScore === 1.0
+                ? 'border-red-400 hover:border-red-600 bg-red-50'
+                : 'border-yellow-200 hover:border-yellow-400'
+            }`}
+            onClick={() => onSelectQuestion(sq.id)}
+            tabIndex={0}
+            role="button"
+            aria-label={`Select question: ${sq.name}`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelectQuestion(sq.id)
+              }
+            }}
+          >
+            <div className="flex justify-between items-start">
+              <h4
+                className={`font-medium text-sm ${
+                  sq.similarityScore === 1.0 ? 'text-red-700' : ''
+                }`}
+              >
+                {sq.name}
+              </h4>
+              <span
+                className={`text-xs px-2 py-1 rounded-full ${
+                  sq.similarityScore === 1.0
+                    ? 'bg-red-100 text-red-800 font-bold'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}
+              >
+                {sq.similarityScore === 1.0
+                  ? 'Birebir aynı soru!'
+                  : `${Math.round((sq.similarityScore || 0) * 100)}% benzerlik`}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{sq.desc}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {sq.subCategory.mainCategory.name} / {sq.subCategory.name}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Warning message if exact duplicate exists */}
+      {hasSameQuestion && (
+        <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-md">
+          <p className="text-sm text-red-800 font-medium">
+            Lütfen mükerrer soru oluşturmayınız. Sistemde zaten var olan bir
+            soruyu tekrar oluşturmak yerine mevcut soruyu kullanınız.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function QuestionForm({
   onBack,
   question,
@@ -140,6 +255,7 @@ export default function QuestionForm({
     []
   )
   const [isFetchingSimilar, setIsFetchingSimilar] = useState(false)
+  const justSelectedQuestion = React.useRef(false)
 
   // Group checklist types for filtering purposes in edit mode
   const checklistTypeGroups = useMemo(() => {
@@ -580,6 +696,12 @@ export default function QuestionForm({
     const name = form.watch('name')
     const desc = form.watch('desc') || ''
 
+    // If we've just selected a question, skip the search
+    if (justSelectedQuestion.current) {
+      justSelectedQuestion.current = false
+      return
+    }
+
     // Edit modundaki ilk yüklemeler için değişiklik olup olmadığını kontrol et
     if (mode === 'edit' && question) {
       const initialName = question.name
@@ -607,6 +729,79 @@ export default function QuestionForm({
     mode,
     question
   ])
+
+  const handleSelectSimilarQuestion = async (questionId: string) => {
+    try {
+      setLoading(true)
+      // Fetch the complete question data from the database
+      const selectedQuestion = await getQuestionCatalogById(questionId)
+
+      if (selectedQuestion) {
+        // Set the ref to indicate we've just selected a question
+        justSelectedQuestion.current = true
+
+        // Set form values from the selected question
+        form.setValue('name', selectedQuestion.name)
+        form.setValue('desc', selectedQuestion.desc || '')
+        form.setValue('type', selectedQuestion.type)
+        form.setValue('subCategoryId', selectedQuestion.subCategoryId)
+        form.setValue('grade', selectedQuestion.grade)
+
+        if (selectedQuestion.answerType) {
+          form.setValue('answerType', selectedQuestion.answerType)
+        }
+
+        if (selectedQuestion.minValue !== null) {
+          form.setValue('min', selectedQuestion.minValue)
+        }
+
+        if (selectedQuestion.maxValue !== null) {
+          form.setValue('max', selectedQuestion.maxValue)
+        }
+
+        if (selectedQuestion.valueUnit) {
+          form.setValue('value', selectedQuestion.valueUnit)
+        }
+
+        // Handle arrays safely
+        form.setValue('images', selectedQuestion.images || [])
+        form.setValue('docs', selectedQuestion.docs || [])
+
+        // Handle tags properly according to schema
+        const formattedTags = selectedQuestion.tags.map((tag) => ({
+          id: tag.id,
+          name: tag.name
+        }))
+        form.setValue('tags', formattedTags)
+
+        // Version data
+        form.setValue('version', selectedQuestion.version)
+        form.setValue('isLatest', selectedQuestion.isLatest)
+
+        if (selectedQuestion.prevId) {
+          form.setValue('prevId', selectedQuestion.prevId)
+        }
+
+        // Clear similar questions to remove the warning
+        setSimilarQuestions([])
+
+        toast({
+          variant: 'default',
+          title: 'Soru seçildi',
+          description: 'Seçtiğiniz soru form alanlarına yüklendi.'
+        })
+      }
+    } catch (error) {
+      console.error('Error selecting similar question:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: 'Soru yüklenirken bir hata oluştu.'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
@@ -789,98 +984,10 @@ export default function QuestionForm({
             />
             {/* Benzer sorular bileşeni */}
             {similarQuestions.length > 0 && (
-              <div
-                className={`border-2 rounded-md p-4 mb-4 shadow-sm ${
-                  similarQuestions.some((q) => q.similarityScore === 1.0)
-                    ? 'bg-red-50 border-red-300'
-                    : 'bg-yellow-50 border-yellow-300'
-                }`}
-              >
-                <h3 className="text-md font-medium mb-2 flex items-center">
-                  <AlertTriangle
-                    className={`h-5 w-5 mr-2 ${
-                      similarQuestions.some((q) => q.similarityScore === 1.0)
-                        ? 'text-red-600'
-                        : 'text-yellow-600'
-                    }`}
-                  />
-                  <span
-                    className={
-                      similarQuestions.some((q) => q.similarityScore === 1.0)
-                        ? 'text-red-800'
-                        : 'text-yellow-800'
-                    }
-                  >
-                    {similarQuestions.some((q) => q.similarityScore === 1.0)
-                      ? 'UYARI! Aynı soru zaten mevcut!'
-                      : 'Dikkat! Benzer sorular bulundu'}
-                  </span>
-                </h3>
-                <p
-                  className={`text-sm mb-3 ${
-                    similarQuestions.some((q) => q.similarityScore === 1.0)
-                      ? 'text-red-700'
-                      : 'text-yellow-700'
-                  }`}
-                >
-                  {similarQuestions.some((q) => q.similarityScore === 1.0)
-                    ? 'Aşağıdaki sorunun birebir aynısı zaten sistemde kayıtlı. Mükerrer soru oluşturmak yasaktır!'
-                    : 'Aşağıdaki benzer soruları kontrol edin ve mükerrer soru oluşturmaktan kaçının:'}
-                </p>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {similarQuestions.map((sq) => (
-                    <div
-                      key={sq.id}
-                      className={`bg-white p-3 rounded border transition-colors ${
-                        sq.similarityScore === 1.0
-                          ? 'border-red-400 hover:border-red-600 bg-red-50'
-                          : 'border-yellow-200 hover:border-yellow-400'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <h4
-                          className={`font-medium text-sm ${
-                            sq.similarityScore === 1.0 ? 'text-red-700' : ''
-                          }`}
-                        >
-                          {sq.name}
-                        </h4>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            sq.similarityScore === 1.0
-                              ? 'bg-red-100 text-red-800 font-bold'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}
-                        >
-                          {sq.similarityScore === 1.0
-                            ? 'Birebir aynı soru!'
-                            : `${Math.round(
-                                (sq.similarityScore || 0) * 100
-                              )}% benzerlik`}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                        {sq.desc}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {sq.subCategory.mainCategory.name} /{' '}
-                        {sq.subCategory.name}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Birebir aynı soru varsa uyarı mesajı */}
-                {similarQuestions.some((q) => q.similarityScore === 1.0) && (
-                  <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-md">
-                    <p className="text-sm text-red-800 font-medium">
-                      Lütfen mükerrer soru oluşturmayınız. Sistemde zaten var
-                      olan bir soruyu tekrar oluşturmak yerine mevcut soruyu
-                      kullanınız.
-                    </p>
-                  </div>
-                )}
-              </div>
+              <SimilarQuestionsAlert
+                similarQuestions={similarQuestions}
+                onSelectQuestion={handleSelectSimilarQuestion}
+              />
             )}
 
             <FormField
@@ -1075,6 +1182,231 @@ export default function QuestionForm({
                 </FormItem>
               )}
             />
+
+            {mode === 'edit' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-lg font-semibold mb-4">Upload Files</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="p-4">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-indigo-500" />
+                          <h3 className="font-medium">Images</h3>
+                        </div>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          disabled={isSubmitting}
+                          onChange={async (e) => {
+                            try {
+                              const files = e.target.files
+                              if (!files?.length) return
+
+                              const uploadedUrls: string[] = []
+
+                              for (const file of Array.from(files)) {
+                                // Check file size (50MB limit)
+                                if (file.size > 50 * 1024 * 1024) {
+                                  throw new Error(
+                                    `File ${file.name} exceeds the 50MB size limit`
+                                  )
+                                }
+
+                                const filePath = `images/${Date.now()}-${
+                                  file.name
+                                }`
+                                const { data, error } = await supabase.storage
+                                  .from('images')
+                                  .upload(filePath, file, {
+                                    cacheControl: '3600',
+                                    upsert: false,
+                                    contentType: file.type
+                                  })
+
+                                if (error) {
+                                  console.error('Supabase upload error:', error)
+                                  throw new Error(
+                                    `Failed to upload ${file.name}: ${error.message}`
+                                  )
+                                }
+
+                                const { data: urlData } = supabase.storage
+                                  .from('images')
+                                  .getPublicUrl(data.path)
+
+                                uploadedUrls.push(urlData.publicUrl)
+                              }
+
+                              const currentImages =
+                                form.getValues('images') || []
+                              form.setValue('images', [
+                                ...currentImages,
+                                ...uploadedUrls
+                              ])
+
+                              toast({
+                                title: '✅ Success',
+                                description: 'Images uploaded successfully'
+                              })
+                            } catch (error) {
+                              console.error('Upload error:', error)
+                              toast({
+                                variant: 'destructive',
+                                title: '🚨 Error',
+                                description:
+                                  error instanceof Error
+                                    ? error.message
+                                    : 'Failed to upload files'
+                              })
+                            }
+                          }}
+                          className="cursor-pointer"
+                        />
+                        {form.watch('images')?.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {form.watch('images').map((image, index) => (
+                              <div key={index} className="relative group">
+                                <img
+                                  src={image}
+                                  alt={`Upload ${index + 1}`}
+                                  className="w-20 h-20 object-cover rounded-md"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  type="button"
+                                  onClick={() => {
+                                    const currentImages =
+                                      form.getValues('images')
+                                    form.setValue(
+                                      'images',
+                                      currentImages.filter(
+                                        (_, i) => i !== index
+                                      )
+                                    )
+                                  }}
+                                  className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-background border hover:bg-destructive hover:text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+
+                    <Card className="p-4">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Upload className="h-5 w-5 text-indigo-500" />
+                          <h3 className="font-medium">Documents</h3>
+                        </div>
+                        <Input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.xls,.xlsx"
+                          multiple
+                          disabled={isSubmitting}
+                          onChange={async (e) => {
+                            try {
+                              const files = e.target.files
+                              if (!files?.length) return
+
+                              const uploadedUrls: string[] = []
+
+                              for (const file of Array.from(files)) {
+                                // Check file size (50MB limit)
+                                if (file.size > 50 * 1024 * 1024) {
+                                  throw new Error(
+                                    `File ${file.name} exceeds the 50MB size limit`
+                                  )
+                                }
+
+                                const filePath = `docs/${Date.now()}-${
+                                  file.name
+                                }`
+                                const { data, error } = await supabase.storage
+                                  .from('images')
+                                  .upload(filePath, file, {
+                                    cacheControl: '3600',
+                                    upsert: false,
+                                    contentType: file.type
+                                  })
+
+                                if (error) {
+                                  console.error('Supabase upload error:', error)
+                                  throw new Error(
+                                    `Failed to upload ${file.name}: ${error.message}`
+                                  )
+                                }
+
+                                const { data: urlData } = supabase.storage
+                                  .from('images')
+                                  .getPublicUrl(data.path)
+
+                                uploadedUrls.push(urlData.publicUrl)
+                              }
+
+                              const currentDocs = form.getValues('docs') || []
+                              form.setValue('docs', [
+                                ...currentDocs,
+                                ...uploadedUrls
+                              ])
+
+                              toast({
+                                title: '✅ Success',
+                                description: 'Documents uploaded successfully'
+                              })
+                            } catch (error) {
+                              console.error('Upload error:', error)
+                              toast({
+                                variant: 'destructive',
+                                title: '🚨 Error',
+                                description:
+                                  error instanceof Error
+                                    ? error.message
+                                    : 'Failed to upload files'
+                              })
+                            }
+                          }}
+                          className="cursor-pointer"
+                        />
+                        {form.watch('docs')?.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {form.watch('docs').map((doc, index) => (
+                              <div key={index} className="relative group">
+                                <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+                                  <FileText className="h-4 w-4" />
+                                  <span className="text-sm truncate max-w-[150px]">
+                                    {doc.split('/').pop()}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const currentDocs = form.getValues('docs')
+                                      form.setValue(
+                                        'docs',
+                                        currentDocs.filter(
+                                          (_, i) => i !== index
+                                        )
+                                      )
+                                    }}
+                                    className="p-1 rounded-full hover:bg-destructive/90 hover:text-destructive-foreground"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end gap-x-2">
               {onBack && (

@@ -116,12 +116,12 @@ export function CreatableTagsInput({
                 <Badge
                   key={tag.id}
                   variant="secondary"
-                  className="py-1 px-2 flex items-center gap-1"
+                  className="py-1 px-2 flex items-center gap-1 transition-colors duration-200 hover:bg-opacity-80 dark:hover:bg-opacity-80"
                 >
                   {tag.name}
                   <XIcon
                     size={14}
-                    className="cursor-pointer opacity-70 hover:opacity-100"
+                    className="cursor-pointer opacity-70 hover:opacity-100 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleRemove(tag.id)
@@ -138,11 +138,14 @@ export function CreatableTagsInput({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 p-1 ml-auto"
+            className="h-8 p-1 ml-auto hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-all duration-200"
             onClick={() => setOpen(true)}
             disabled={disabled}
           >
-            <PlusCircleIcon size={16} />
+            <PlusCircleIcon
+              size={16}
+              className="transition-transform hover:scale-110"
+            />
           </Button>
         </div>
       </PopoverTrigger>
@@ -160,13 +163,13 @@ export function CreatableTagsInput({
                 <div className="py-2 px-1">
                   <p className="text-sm text-muted-foreground">No tags found</p>
                   {showCreateOption && (
-                    <div
-                      className="flex items-center gap-2 p-2 rounded-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                    <Button
                       onClick={handleCreateTag}
+                      className="w-full mt-2 bg-indigo-500 hover:bg-indigo-600 transition-all duration-300 hover:shadow-md group"
                     >
-                      <PlusCircleIcon size={16} />
-                      <span>Create "{inputValue}"</span>
-                    </div>
+                      <PlusCircleIcon className="mr-2 h-4 w-4 transition-transform group-hover:scale-110" />
+                      Add "{inputValue}"
+                    </Button>
                   )}
                 </div>
               ) : (
@@ -194,12 +197,15 @@ export function CreatableTagsInput({
             </CommandGroup>
             {showCreateOption && createable && (
               <CommandGroup>
-                <CommandItem onSelect={handleCreateTag}>
-                  <div className="flex items-center gap-2">
-                    <PlusCircleIcon size={16} />
-                    <span>Create "{inputValue}"</span>
-                  </div>
-                </CommandItem>
+                <div className="p-2">
+                  <Button
+                    onClick={handleCreateTag}
+                    className="w-full bg-indigo-500 hover:bg-indigo-600 transition-all duration-300 hover:shadow-md group"
+                  >
+                    <PlusCircleIcon className="mr-2 h-4 w-4 transition-transform group-hover:scale-110" />
+                    Add "{inputValue}"
+                  </Button>
+                </div>
               </CommandGroup>
             )}
           </CommandList>

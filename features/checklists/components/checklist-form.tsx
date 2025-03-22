@@ -154,7 +154,6 @@ export default function ChecklistForm({
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const [filteredModels, setFilteredModels] = useState<typeof models>([])
-  const [availableGroups, setAvailableGroups] = useState<string[]>([])
   const user = useCurrentUser()
 
   // Memoize form options once
@@ -204,65 +203,113 @@ export default function ChecklistForm({
 
   const form = useForm<FormValues>(formOptions)
 
-  // Initialize form in edit mode - only run when checklist changes
-  // useEffect(() => {
-  //   if (mode === 'edit' && checklist) {
-  //     const formValues = {
-  //       id: checklist.id,
-  //       type: checklist.type as ChecklistTypes,
-  //       name: checklist.name,
-  //       desc: checklist.desc || undefined,
-  //       userId: checklist.userId || undefined,
-  //       itemNo: checklist.itemNo || [],
-  //       groupIds: (checklist.groups as any[])?.map((group) => group.id) || [],
-  //       modelIds: (checklist.models as any[])?.map((model) => model.id) || [],
-  //       pointIds: (checklist.points as any[])?.map((point) => point.id) || [],
-  //       questionIds:
-  //         (checklist.questions as any[])?.map((q) => q.questionId) || [],
-  //       dealerIds: checklist.dealers || [],
-  //       images: checklist.images || [],
-  //       docs: checklist.docs || [],
-  //       status: checklist.status
-  //     }
-
-  //     form.reset(formValues as any, { keepDefaultValues: true })
-  //   }
-  // }, [checklist, mode, form])
-
   // Watch form values outside component rendering to prevent infinite loops
   const selectedPointIds = form.watch('pointIds') || []
   const selectedGroupIds = form.watch('groupIds') || []
-  const hasSelectedPoints = selectedPointIds.length > 0
-  const hasSelectedGroups = selectedGroupIds.length > 0
   const watchedQuestionIds = form.watch('questionIds')
   const selectedType = form.watch('type') as ChecklistTypes
   const watchedImages = form.watch('images') || []
   const watchedDocs = form.watch('docs') || []
 
+  // Ensure pointIds are set in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && checklist?.points && checklist.points.length > 0) {
+      const pointIds = checklist.points.map((point: any) => point.id)
+      form.setValue('pointIds', pointIds)
+    }
+  }, [mode, checklist, form])
+
+  // Ensure groupIds and modelIds are set in edit mode
+  useEffect(() => {
+    if (mode === 'edit') {
+      if (checklist?.groups && checklist.groups.length > 0) {
+        const groupIds = checklist.groups.map((group: any) => group.id)
+        form.setValue('groupIds', groupIds)
+      }
+
+      if (checklist?.models && checklist.models.length > 0) {
+        const modelIds = checklist.models.map((model: any) => model.id)
+        form.setValue('modelIds', modelIds)
+
+        // Also update filteredModels for the models dropdown
+        if (models && checklist?.groups) {
+          const groupIds = checklist.groups.map((group: any) => group.id)
+          const filtered = models.filter((model) =>
+            groupIds.includes(model.vehicleGroupId)
+          )
+          setFilteredModels(filtered)
+        }
+      }
+    }
+  }, [mode, checklist, form, models])
+
+  // Update filteredModels when selectedGroupIds changes
+  useEffect(() => {
+    if (selectedGroupIds.length > 0 && models) {
+      const filtered = models.filter((model) => {
+        return selectedGroupIds.includes(model.vehicleGroupId)
+      })
+      setFilteredModels(filtered)
+    } else {
+      setFilteredModels([])
+    }
+  }, [selectedGroupIds, models])
+
   // Memoized options
   const groupOptions = useMemo(() => {
-    return groups
-      ?.filter((group) => availableGroups.includes(group.id))
-      .map((group) => ({
-        value: group.id,
-        label: group.name
-      }))
-  }, [groups, availableGroups])
+    // If there are selected points, filter groups to only include those associated with the selected points
+    if (selectedPointIds.length > 0 && points) {
+      const validGroupIds = new Set<string>()
+      const selectedPoints = points.filter((point) =>
+        selectedPointIds.includes(point.id)
+      )
+
+      selectedPoints.forEach((point) => {
+        point.groups.forEach((group) => {
+          validGroupIds.add(group.id)
+        })
+      })
+
+      return (
+        groups
+          ?.filter((group) => validGroupIds.has(group.id))
+          .map((group) => ({
+            value: group.id,
+            label: group.name
+          })) || []
+      )
+    }
+
+    // If no points are selected, return an empty array
+    return selectedPointIds.length === 0
+      ? []
+      : groups?.map((group) => ({
+          value: group.id,
+          label: group.name
+        })) || []
+  }, [groups, points, selectedPointIds])
 
   const modelOptions = useMemo(() => {
+    // Only show models when groups are selected
+    if (selectedGroupIds.length === 0) {
+      return []
+    }
+
     return (
       filteredModels?.map((model) => ({
         value: model.id,
         label: model.name
       })) || []
     )
-  }, [filteredModels])
+  }, [filteredModels, selectedGroupIds])
 
   const pointOptions = useMemo(() => {
-    return points?.map((point) => ({
-      value: point.id,
-      label: point.name
-    }))
+    return (
+      points?.map((point) => ({
+        value: point.id,
+        label: point.name
+      })) || []
+    )
   }, [points])
 
   // Memoize the filtered questions computation
@@ -432,23 +479,93 @@ export default function ChecklistForm({
                 name="pointIds"
                 control={form.control}
                 render={({ field }) => {
-                  const currentValue =
-                    mode === 'edit'
-                      ? (checklist?.points as any[])?.map((point) => point.id)
-                      : field.value
+                  // Ensure we have an array, even if field.value is undefined
+                  const currentValue = Array.isArray(field.value)
+                    ? field.value
+                    : []
 
                   return (
                     <FormItem className="col-span-5">
                       <FormLabel>Points</FormLabel>
                       <FormControl>
                         <MultiSelect
+                          key={`point-select-${
+                            pointOptions.length
+                          }-${currentValue.join(',')}`}
                           options={pointOptions}
                           onValueChange={(value) => {
-                            form.setValue('pointIds', value)
+                            // Check if all points were cleared
+                            if (value.length === 0 && currentValue.length > 0) {
+                              // Reset both groups and models
+                              form.setValue('groupIds', [], {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true
+                              })
+                              form.setValue('modelIds', [], {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true
+                              })
+
+                              // Update pointIds
+                              form.setValue('pointIds', value, {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true
+                              })
+                              field.onChange(value)
+                              return
+                            }
+
+                            // Get the selected points
+                            const selectedPoints = points.filter((point) =>
+                              value.includes(point.id)
+                            )
+
+                            // Get all group IDs associated with the selected points
+                            const validGroupIds = new Set<string>()
+                            selectedPoints.forEach((point) => {
+                              point.groups.forEach((group) => {
+                                validGroupIds.add(group.id)
+                              })
+                            })
+
+                            // Filter current groupIds to only include valid ones
+                            const currentGroupIds =
+                              form.getValues('groupIds') || []
+                            const newGroupIds = currentGroupIds.filter(
+                              (id) =>
+                                validGroupIds.size === 0 ||
+                                validGroupIds.has(id)
+                            )
+
+                            // If groups changed, update them and reset models
+                            if (currentGroupIds.length !== newGroupIds.length) {
+                              form.setValue('groupIds', newGroupIds, {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true
+                              })
+
+                              // Reset models since groups changed
+                              form.setValue('modelIds', [], {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true
+                              })
+                            }
+
+                            // Update pointIds
+                            form.setValue('pointIds', value, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true
+                            })
                             field.onChange(value)
                           }}
-                          value={currentValue || []}
-                          defaultValue={currentValue || []}
+                          value={currentValue}
+                          defaultValue={currentValue}
                           maxCount={2}
                           placeholder="Select points"
                         />
@@ -498,42 +615,124 @@ export default function ChecklistForm({
                 name="groupIds"
                 control={form.control}
                 render={({ field }) => {
-                  const currentGroupValue =
-                    mode === 'edit'
-                      ? (checklist?.groups as any[])?.map((group) => group.id)
-                      : field.value
+                  // Ensure we have an array, even if field.value is undefined
+                  const currentGroupValue = Array.isArray(field.value)
+                    ? field.value
+                    : []
 
                   return (
                     <FormItem className="col-span-5">
                       <FormLabel>Groups</FormLabel>
                       <FormControl>
-                        <div
-                          className={cn(
-                            !hasSelectedPoints &&
-                              'opacity-50 pointer-events-none'
-                          )}
-                        >
-                          <MultiSelect
-                            options={groupOptions}
-                            onValueChange={(value) => {
-                              form.setValue('groupIds', value)
+                        <MultiSelect
+                          key={`group-select-${
+                            groupOptions.length
+                          }-${currentGroupValue.join(',')}`}
+                          options={groupOptions}
+                          onValueChange={(value) => {
+                            // Check if all groups were cleared
+                            if (
+                              value.length === 0 &&
+                              currentGroupValue.length > 0
+                            ) {
+                              // Reset models
+                              form.setValue('modelIds', [], {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true
+                              })
+
+                              // Update groupIds
+                              form.setValue('groupIds', value, {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true
+                              })
                               field.onChange(value)
-                              // Filter models based on selected groups
-                              const selectedGroupIds = new Set(value)
-                              const filtered = models?.filter((model) =>
-                                selectedGroupIds.has(model.vehicleGroupId)
+                              setFilteredModels([])
+                              return
+                            }
+
+                            // Check if the selected groups are valid for the selected points
+                            const selectedPointIds =
+                              form.getValues('pointIds') || []
+
+                            if (selectedPointIds.length > 0) {
+                              // Get all valid group IDs for the selected points
+                              const validGroupIds = new Set<string>()
+                              const selectedPoints = points.filter((point) =>
+                                selectedPointIds.includes(point.id)
                               )
-                              setFilteredModels(filtered || [])
-                              // Clear models selection when groups change
-                              form.setValue('modelIds', [])
-                            }}
-                            value={currentGroupValue || []}
-                            defaultValue={currentGroupValue || []}
-                            maxCount={2}
-                            disabled={!hasSelectedPoints}
-                            placeholder="Select groups"
-                          />
-                        </div>
+
+                              selectedPoints.forEach((point) => {
+                                point.groups.forEach((group) => {
+                                  validGroupIds.add(group.id)
+                                })
+                              })
+
+                              // Filter the selected groups to only include valid ones
+                              const filteredValue = value.filter(
+                                (id) =>
+                                  validGroupIds.size === 0 ||
+                                  validGroupIds.has(id)
+                              )
+
+                              if (filteredValue.length !== value.length) {
+                                value = filteredValue
+                              }
+                            }
+
+                            // Update groupIds
+                            form.setValue('groupIds', value, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true
+                            })
+                            field.onChange(value)
+
+                            // Filter models based on selected groups
+                            if (value.length > 0 && models) {
+                              const filtered = models.filter((model) =>
+                                value.includes(model.vehicleGroupId)
+                              )
+
+                              setFilteredModels(filtered)
+
+                              // Filter current modelIds to only include valid ones
+                              const currentModelIds =
+                                form.getValues('modelIds') || []
+                              const validModelIds = new Set(
+                                filtered.map((model) => model.id)
+                              )
+                              const newModelIds = currentModelIds.filter((id) =>
+                                validModelIds.has(id)
+                              )
+
+                              // Update modelIds if they changed
+                              if (
+                                newModelIds.length !== currentModelIds.length
+                              ) {
+                                form.setValue('modelIds', newModelIds, {
+                                  shouldDirty: true,
+                                  shouldTouch: true,
+                                  shouldValidate: true
+                                })
+                              }
+                            } else {
+                              setFilteredModels([])
+                              // Clear models selection when no groups are selected
+                              form.setValue('modelIds', [], {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true
+                              })
+                            }
+                          }}
+                          value={currentGroupValue}
+                          defaultValue={currentGroupValue}
+                          maxCount={2}
+                          placeholder="Select groups"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -544,34 +743,60 @@ export default function ChecklistForm({
                 name="modelIds"
                 control={form.control}
                 render={({ field }) => {
-                  const currentModelValue =
-                    mode === 'edit'
-                      ? (checklist?.models as any[])?.map((model) => model.id)
-                      : field.value
+                  // Ensure we have an array, even if field.value is undefined
+                  const currentModelValue = Array.isArray(field.value)
+                    ? field.value
+                    : []
 
                   return (
                     <FormItem className="col-span-5">
                       <FormLabel>Models</FormLabel>
                       <FormControl>
-                        <div
-                          className={cn(
-                            !hasSelectedGroups &&
-                              'opacity-50 pointer-events-none'
-                          )}
-                        >
-                          <MultiSelect
-                            options={modelOptions}
-                            onValueChange={(value) => {
-                              form.setValue('modelIds', value)
-                              field.onChange(value)
-                            }}
-                            value={currentModelValue || []}
-                            defaultValue={currentModelValue || []}
-                            maxCount={2}
-                            disabled={!hasSelectedGroups}
-                            placeholder="Select models"
-                          />
-                        </div>
+                        <MultiSelect
+                          key={`model-select-${
+                            modelOptions.length
+                          }-${currentModelValue.join(',')}`}
+                          options={modelOptions}
+                          onValueChange={(value) => {
+                            // Check if the selected models are valid for the selected groups
+                            const selectedGroupIds =
+                              form.getValues('groupIds') || []
+
+                            if (selectedGroupIds.length > 0) {
+                              // Get all valid model IDs for the selected groups
+                              const validModelIds = new Set(
+                                models
+                                  .filter((model) =>
+                                    selectedGroupIds.includes(
+                                      model.vehicleGroupId
+                                    )
+                                  )
+                                  .map((model) => model.id)
+                              )
+
+                              // Filter the selected models to only include valid ones
+                              const filteredValue = value.filter((id) =>
+                                validModelIds.has(id)
+                              )
+
+                              if (filteredValue.length !== value.length) {
+                                value = filteredValue
+                              }
+                            }
+
+                            // Update modelIds
+                            form.setValue('modelIds', value, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true
+                            })
+                            field.onChange(value)
+                          }}
+                          value={currentModelValue}
+                          defaultValue={currentModelValue}
+                          maxCount={2}
+                          placeholder="Select models"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -688,7 +913,7 @@ export default function ChecklistForm({
                 </Button>
               )}
               <Button type="submit" disabled={!isValid || isSubmitting}>
-                {mode === 'create' ? 'Create Question' : 'Update Question'}
+                {mode === 'create' ? 'Create Checklist' : 'Update Checklist'}
               </Button>
               <Button
                 type="button"

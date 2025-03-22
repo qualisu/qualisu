@@ -22,7 +22,9 @@ const buttonVariants = cva(
         success:
           'bg-green-600 text-white hover:bg-green-700 border border-green-600',
         outlineSuccess:
-          'border-green-600 text-green-600 hover:bg-green-600 hover:text-white'
+          'border-green-600 text-green-600 hover:bg-green-600 hover:text-white',
+        warning:
+          'bg-yellow-500 text-white hover:bg-yellow-600 border border-yellow-600'
       },
       size: {
         default: 'h-10 px-4 py-2',

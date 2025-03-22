@@ -49,13 +49,13 @@ export default function VehicleInfo({ vehicleInfo }: VehicleInfoProps) {
               <span className="font-semibold text-sm text-muted-foreground">
                 Fert No:
               </span>
-              <span className="text-sm">{vehicleInfo.fertNo}</span>
+              <span className="text-sm text-red-500 font-bold">-</span>
             </p>
             <p className="flex items-center gap-2">
               <span className="font-semibold text-sm text-muted-foreground">
                 ZOBAS No:
               </span>
-              <span className="text-sm">{vehicleInfo.zobasNo}</span>
+              <span className="text-sm text-red-500 font-bold">-</span>
             </p>
           </div>
         </div>

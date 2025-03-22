@@ -361,30 +361,17 @@ export async function getQuestionsByChecklistId(checklistId: string) {
   try {
     const questions = await db.checklistQuestions.findMany({
       where: {
-        checklistId,
-        question: {
-          isActive: 'Active' // Only get active questions
-        }
+        checklistId
       },
       include: {
         question: {
-          include: {
-            subCategory: {
-              include: {
-                mainCategory: true
-              }
-            }
-          }
+          include: { subCategory: { include: { mainCategory: true } } }
         }
       }
     })
 
-    // Filter out questions where the version in checklist doesn't match current version
-    const validQuestions = questions.filter(
-      (q) => q.version === q.question.version
-    )
-
-    return validQuestions
+    // Return all questions without filtering by version
+    return questions
   } catch (error) {
     console.error('Error fetching checklist questions:', error)
     throw new Error('Failed to fetch checklist questions')

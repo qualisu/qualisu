@@ -2,6 +2,7 @@
 
 'use client'
 
+import React from 'react'
 import { useState, useMemo } from 'react'
 import {
   Checklists,
@@ -16,7 +17,6 @@ import {
 import { BarChart2, ClipboardCheck, Factory } from 'lucide-react'
 import ChecklistSteps from '@/features/checklists/components/checklist-steps'
 import ChecklistForm from '@/features/checklists/components/checklist-form'
-import React from 'react'
 
 interface ChecklistOption {
   id: string
@@ -114,9 +114,6 @@ export default function ChecklistStepsPage({
   )
 
   if (mode === 'edit') {
-    // In edit mode, restrict the available checklist types to only the current checklist type
-    // This ensures that when editing a question, the checklist type cannot be changed
-    // Following the business rule that questions can only be edited within their original type group
     const filteredChecklistTypes = checklist?.type
       ? [checklist.type as ChecklistTypes]
       : preferenceOptions.flatMap((opt) => opt.type)

@@ -1,16 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['localhost']
+    domains: ['localhost', 'wsolkwdpcweloewvrmhv.supabase.co']
   },
   // Optimize CSS loading
-  optimizeFonts: true,
-  // Configure preloading options
-  experimental: {
-    optimizeCss: true,
-    // Disable automatic CSS preloading that's not being used
-    strictNextHead: true
-  }
+  optimizeFonts: true
 }
 
 module.exports = nextConfig
