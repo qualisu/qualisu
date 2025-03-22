@@ -421,8 +421,8 @@ model Simulators {
   pointsId     String
   checklistsId String
   answers      Answers[]
-  points       Points          @relation(fields: [pointsId], references: [id])
-  checklists   Checklists      @relation(fields: [checklistsId], references: [id])
+  points       Points          @relation(fields: [pointsId], references: [id], onDelete: Cascade)
+  checklists   Checklists      @relation(fields: [checklistsId], references: [id], onDelete: Cascade)
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @default(now()) @updatedAt
 

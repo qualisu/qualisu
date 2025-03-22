@@ -82,61 +82,71 @@ export function QuestionHistory({ questionId, history }: QuestionHistoryProps) {
         </DialogHeader>
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-4">
-            {history.map((version, index) => (
-              <div
-                key={version.id}
-                className="flex items-start justify-between border rounded-lg p-4"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">
-                      Versiyon {version.version}
-                    </p>
-                    {index === 0 && (
-                      <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded">
-                        Güncel
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(version.updatedAt), 'PPpp', {
-                      locale: tr
-                    })}
-                  </p>
-                  <p className="text-sm">{version.name}</p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {version.tags.map((tag) => (
-                      <span
-                        key={tag.id}
-                        className="bg-secondary text-secondary-foreground text-xs px-2 py-0.5 rounded"
-                      >
-                        {tag.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                {index !== 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isLoading}
-                    onClick={() => handleRevert(version.id)}
-                  >
-                    {loadingVersionId === version.id ? (
-                      <div className="flex items-center">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
-                        İşleniyor...
-                      </div>
-                    ) : (
-                      <>
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Bu Versiyona Dön
-                      </>
-                    )}
-                  </Button>
-                )}
+            {history.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-8 text-muted-foreground">
+                <Clock className="h-16 w-16 mb-4 opacity-20" />
+                <p>Bu soru için henüz versiyon geçmişi bulunmamaktadır.</p>
+                <p className="text-sm">
+                  Soru düzenlendiğinde versiyon geçmişi oluşturulacaktır.
+                </p>
               </div>
-            ))}
+            ) : (
+              history.map((version, index) => (
+                <div
+                  key={version.id}
+                  className="flex items-start justify-between border rounded-lg p-4"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">
+                        Versiyon {version.version}
+                      </p>
+                      {index === 0 && (
+                        <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded">
+                          Güncel
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(version.updatedAt), 'PPpp', {
+                        locale: tr
+                      })}
+                    </p>
+                    <p className="text-sm">{version.name}</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {version.tags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="bg-secondary text-secondary-foreground text-xs px-2 py-0.5 rounded"
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {index !== 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isLoading}
+                      onClick={() => handleRevert(version.id)}
+                    >
+                      {loadingVersionId === version.id ? (
+                        <div className="flex items-center">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
+                          İşleniyor...
+                        </div>
+                      ) : (
+                        <>
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Bu Versiyona Dön
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </ScrollArea>
       </DialogContent>

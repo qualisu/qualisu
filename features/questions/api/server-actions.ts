@@ -131,14 +131,36 @@ export const getQuestionCatalog = async () => {
 }
 
 export const getQuestionCatalogById = async (id: string) => {
-  const question = await db.questionCatalog.findUnique({
-    where: { id },
-    include: {
-      tags: true,
-      subCategory: { include: { mainCategory: true } }
+  try {
+    // First fetch the question data
+    const question = await db.questionCatalog.findUnique({
+      where: { id },
+      include: {
+        tags: true,
+        subCategory: { include: { mainCategory: true } }
+      }
+    })
+
+    if (!question) {
+      return null
     }
-  })
-  return question
+
+    // Fetch question history
+    const historyResult = await getQuestionHistory(id)
+
+    // Add history to the question object if available
+    if (historyResult.success && historyResult.history) {
+      return {
+        ...question,
+        history: historyResult.history
+      }
+    }
+
+    return question
+  } catch (error) {
+    console.error('Error fetching question by ID:', error)
+    return null
+  }
 }
 
 export const createQuestion = async (data: QuestionInput) => {
@@ -212,28 +234,153 @@ export const deleteQuestion = async (id: string) => {
   }
 }
 
-export async function searchSimilarQuestions(query: string) {
+export async function searchSimilarQuestions(
+  query: string,
+  excludeId?: string
+) {
   try {
-    const response = await db.questionCatalog.findMany({
-      where: {
-        OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { desc: { contains: query, mode: 'insensitive' } }
-        ]
-      },
-      select: {
-        name: true,
-        desc: true,
-        subCategoryId: true,
-        grade: true,
-        tags: { select: { id: true, name: true } }
-      },
-      take: 5
+    if (!query || query.trim().length < 2) {
+      return []
+    }
+
+    // Sorgu metnini temizle ve kelimelere ayır
+    const cleanQuery = query.trim().toLowerCase()
+    const words = cleanQuery.split(/\s+/).filter((word) => word.length >= 2) // 2 veya daha uzun karakterli kelimeler
+
+    // ARAMA STRATEJİSİ: Sorgu için tam ve benzer eşleşmeleri bulmak için çoklu yaklaşım
+
+    // 1. TÜM SORULARI GETİR (Debugging ve tam kontrol için)
+    const allQuestions = await db.questionCatalog.findMany({
+      where: { isLatest: true },
+      select: { id: true, name: true },
+      take: 20
     })
 
-    return response
+    // 2. EXACT MATCH: Tam metin eşleşme araması (case-insensitive)
+    // Farklı sorgularla tam eşleşme ararken birden fazla yöntem kullan
+    const exactDuplicateQueries = [
+      query, // Orjinal sorgu
+      query.trim(), // Trim edilmiş
+      query.toLowerCase().trim(), // Lowercase ve trim
+      query.replace(/\s+/g, ' ').trim() // Fazla boşluklar temizlenmiş
+    ]
+
+    // Her sorgu varyasyonu için tam eşleşme ara
+    let exactMatches: any[] = []
+
+    for (const exactQuery of exactDuplicateQueries) {
+      const matches = await db.questionCatalog.findMany({
+        where: {
+          name: { equals: exactQuery, mode: 'insensitive' as const },
+          ...(excludeId ? { NOT: { id: excludeId } } : {}),
+          isLatest: true
+        },
+        select: {
+          id: true,
+          name: true,
+          desc: true,
+          subCategory: {
+            select: { name: true, mainCategory: { select: { name: true } } }
+          }
+        }
+      })
+
+      if (matches.length > 0) {
+        exactMatches = [...exactMatches, ...matches]
+      }
+    }
+
+    // Tekrarlanan sonuçları kaldır
+    exactMatches = exactMatches.filter(
+      (match, index, self) => index === self.findIndex((m) => m.id === match.id)
+    )
+
+    // 3. CONTAINS SEARCH: İçerik bazlı arama (tam eşleşme bulunamadıysa)
+    // Kelime bazlı arama koşullarını oluştur
+    const searchConditions: any[] = []
+
+    // Tam metni "contains" ile ara
+    searchConditions.push({
+      name: { contains: cleanQuery, mode: 'insensitive' as const }
+    })
+
+    // Her kelime için arama koşulu ekle
+    words.forEach((word) => {
+      if (word.length >= 2) {
+        searchConditions.push(
+          { name: { contains: word, mode: 'insensitive' as const } },
+          { desc: { contains: word, mode: 'insensitive' as const } }
+        )
+      }
+    })
+
+    // Benzer soruları ara
+    const similarResults = await db.questionCatalog.findMany({
+      where: {
+        OR: searchConditions,
+        // Mevcut soruyu ve tam eşleşmeleri hariç tut
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+        ...(exactMatches.length > 0
+          ? {
+              id: { notIn: exactMatches.map((m) => m.id) }
+            }
+          : {}),
+        isLatest: true
+      },
+      select: {
+        id: true,
+        name: true,
+        desc: true,
+        subCategory: {
+          select: { name: true, mainCategory: { select: { name: true } } }
+        }
+      },
+      take: 30
+    })
+
+    // 4. Sonuçları birleştir (önce tam eşleşmeler)
+    const combinedResults = [...exactMatches, ...similarResults]
+
+    // 5. SON ÇARE: Hiç eşleşme bulunamadıysa, çok basit bir arama yap
+    if (combinedResults.length === 0) {
+      // Sadece kelimelere bölerek basit bir arama yap
+      const simpleSearchTerms = query
+        .trim()
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 2)
+
+      if (simpleSearchTerms.length > 0) {
+        const simpleConditions = simpleSearchTerms.map((term) => ({
+          name: { contains: term, mode: 'insensitive' as const }
+        }))
+
+        const lastResortResults = await db.questionCatalog.findMany({
+          where: {
+            OR: simpleConditions,
+            ...(excludeId ? { id: { not: excludeId } } : {}),
+            isLatest: true
+          },
+          select: {
+            id: true,
+            name: true,
+            desc: true,
+            subCategory: {
+              select: { name: true, mainCategory: { select: { name: true } } }
+            }
+          },
+          take: 5
+        })
+
+        if (lastResortResults.length > 0) {
+          return lastResortResults
+        }
+      }
+    }
+
+    return combinedResults
   } catch (error) {
-    console.error('Error searching questions:', error)
+    console.error('Error in searchSimilarQuestions:', error)
     return []
   }
 }

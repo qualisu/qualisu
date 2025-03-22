@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { QuestionCatalog, ChecklistTypes } from '@prisma/client'
 import { ArrowUpDown, Plus } from 'lucide-react'
-import { ColumnDef, FilterFn } from '@tanstack/react-table'
+import { ColumnDef } from '@tanstack/react-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 
@@ -26,13 +26,6 @@ export interface QuestionWithCategory extends QuestionCatalog {
   }
   isOldVersion: boolean
   hasNewVersion: boolean
-}
-
-declare module '@tanstack/table-core' {
-  interface FilterFns {
-    categoryFilter: FilterFn<QuestionWithCategory>
-    fuzzy: FilterFn<any>
-  }
 }
 
 interface AddQuestionModalProps {

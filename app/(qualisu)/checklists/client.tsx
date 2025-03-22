@@ -2,6 +2,7 @@
 
 'use client'
 
+import React from 'react'
 import { useState, useMemo } from 'react'
 import {
   Checklists,
@@ -16,7 +17,14 @@ import {
 import { BarChart2, ClipboardCheck, Factory } from 'lucide-react'
 import ChecklistSteps from '@/features/checklists/components/checklist-steps'
 import ChecklistForm from '@/features/checklists/components/checklist-form'
-import React from 'react'
+
+interface ChecklistOption {
+  id: string
+  title: string
+  description: string
+  icon: React.ReactNode
+  type: ChecklistTypes
+}
 
 interface ChecklistStepsPageProps {
   checklist?: Checklists
@@ -43,68 +51,73 @@ export default function ChecklistStepsPage({
   const [selectedOption, setSelectedOption] = useState<string>()
 
   const preferenceOptions = useMemo(
-    () => [
-      {
-        id: 'standard',
-        title: 'Standard Checklist',
-        description: 'Standard checklists',
-        icon: <ClipboardCheck className="w-6 h-6 text-primary" />,
-        type: ChecklistTypes.STANDART
-      },
-      {
-        id: 'regulation',
-        title: 'Regulation Checklist',
-        description: 'Regulation checklists',
-        icon: <ClipboardCheck className="w-6 h-6 text-primary" />,
-        type: ChecklistTypes.REGULATION
-      },
-      {
-        id: 'generic',
-        title: 'Generic Checklist',
-        description: 'Generic checklists',
-        icon: <ClipboardCheck className="w-6 h-6 text-primary" />,
-        type: ChecklistTypes.GENERIC
-      },
-      {
-        id: 'traceability',
-        title: 'Traceability Checklist',
-        description: 'Traceability checklists',
-        icon: <BarChart2 className="w-6 h-6 text-primary" />,
-        type: ChecklistTypes.TRACING
-      },
-      {
-        id: 'supplier',
-        title: 'Supplier Checklist',
-        description: 'Supplier audits and tracing checklists',
-        icon: <Factory className="w-6 h-6 text-primary" />,
-        type: ChecklistTypes.SUPPLIER
-      },
-      {
-        id: 'periodic',
-        title: 'Periodic Checklist',
-        description: 'Periodic checklists',
-        icon: <BarChart2 className="w-6 h-6 text-primary" />,
-        type: ChecklistTypes.PERIODIC
-      },
-      {
-        id: 'partcop',
-        title: 'PartCop Checklist',
-        description: 'PartCop checklists',
-        icon: <Factory className="w-6 h-6 text-primary" />,
-        type: ChecklistTypes.PARTCOP
-      },
-      {
-        id: 'cop',
-        title: 'COP Checklist',
-        description: 'COP checklists',
-        icon: <Factory className="w-6 h-6 text-primary" />,
-        type: ChecklistTypes.COP
-      }
-    ],
+    () =>
+      [
+        {
+          id: 'standard',
+          title: 'Standard Checklist',
+          description: 'Standard checklists',
+          icon: <ClipboardCheck className="w-6 h-6 text-primary" />,
+          type: ChecklistTypes.STANDART
+        },
+        {
+          id: 'regulation',
+          title: 'Regulation Checklist',
+          description: 'Regulation checklists',
+          icon: <ClipboardCheck className="w-6 h-6 text-primary" />,
+          type: ChecklistTypes.REGULATION
+        },
+        {
+          id: 'generic',
+          title: 'Generic Checklist',
+          description: 'Generic checklists',
+          icon: <ClipboardCheck className="w-6 h-6 text-primary" />,
+          type: ChecklistTypes.GENERIC
+        },
+        {
+          id: 'traceability',
+          title: 'Traceability Checklist',
+          description: 'Traceability checklists',
+          icon: <BarChart2 className="w-6 h-6 text-primary" />,
+          type: ChecklistTypes.TRACING
+        },
+        {
+          id: 'supplier',
+          title: 'Supplier Checklist',
+          description: 'Supplier audits and tracing checklists',
+          icon: <Factory className="w-6 h-6 text-primary" />,
+          type: ChecklistTypes.SUPPLIER
+        },
+        {
+          id: 'periodic',
+          title: 'Periodic Checklist',
+          description: 'Periodic checklists',
+          icon: <BarChart2 className="w-6 h-6 text-primary" />,
+          type: ChecklistTypes.PERIODIC
+        },
+        {
+          id: 'partcop',
+          title: 'PartCop Checklist',
+          description: 'PartCop checklists',
+          icon: <Factory className="w-6 h-6 text-primary" />,
+          type: ChecklistTypes.PARTCOP
+        },
+        {
+          id: 'cop',
+          title: 'COP Checklist',
+          description: 'COP checklists',
+          icon: <Factory className="w-6 h-6 text-primary" />,
+          type: ChecklistTypes.COP
+        }
+      ] as ChecklistOption[],
     []
   )
 
   if (mode === 'edit') {
+    const filteredChecklistTypes = checklist?.type
+      ? [checklist.type as ChecklistTypes]
+      : preferenceOptions.flatMap((opt) => opt.type)
+
     return (
       <MemoizedChecklistForm
         mode={mode}
@@ -124,7 +137,7 @@ export default function ChecklistStepsPage({
             points: Array<{ id: string; name: string; status: string }>
           }
         }
-        checklistTypes={preferenceOptions.flatMap((opt) => opt.type)}
+        checklistTypes={filteredChecklistTypes}
         uploadedFiles={{ images: [], docs: [] }}
         points={points as (Points & { groups: VehicleGroup[] })[]}
         groups={groups as VehicleGroup[]}

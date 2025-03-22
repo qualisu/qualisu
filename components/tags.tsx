@@ -281,7 +281,7 @@ export function TagsInput({
                     <Badge
                       key={tag.id}
                       className={cn(
-                        'py-1 px-2 flex items-center gap-1 border',
+                        'py-1 px-2 flex items-center gap-1 border hover:bg-white dark:hover:bg-opacity-70',
                         pastelColors[colorIndex]
                       )}
                     >
@@ -327,6 +327,16 @@ export function TagsInput({
                   <p className="text-sm text-muted-foreground">
                     Etiket bulunamadı
                   </p>
+                  {showCreateOption && selectedSubCategoryId && (
+                    <Button
+                      onClick={handleCreateTag}
+                      className="w-full mt-2 bg-indigo-500 hover:bg-indigo-600"
+                      disabled={isCreating}
+                    >
+                      <PlusCircleIcon className="mr-2 h-4 w-4" />"{inputValue}"
+                      ekle
+                    </Button>
+                  )}
                 </div>
               </CommandEmpty>
               <CommandGroup>

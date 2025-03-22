@@ -1,7 +1,6 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { AnswerType } from '@prisma/client'
 import { useState, useMemo } from 'react'
 import { MessageCircleQuestion, PlusIcon } from 'lucide-react'
 

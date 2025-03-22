@@ -186,16 +186,38 @@ export const MultiSelect = React.forwardRef<
     },
     ref
   ) => {
-    const [selectedValues, setSelectedValues] =
-      React.useState<string[]>(defaultValue)
+    const [selectedValues, setSelectedValues] = React.useState<string[]>(
+      value || defaultValue
+    )
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
     const [isAnimating, setIsAnimating] = React.useState(false)
     const [inputValue, setInputValue] = React.useState('')
     const [filteredOptions, setFilteredOptions] = React.useState(options)
 
+    // Update selectedValues when value prop changes
+    React.useEffect(() => {
+      if (value !== undefined) {
+        setSelectedValues(value)
+      }
+    }, [value])
+
+    // Update filteredOptions when options change
     React.useEffect(() => {
       setFilteredOptions(options)
-    }, [options])
+
+      // Check if any selected values are no longer in the options
+      if (selectedValues.length > 0) {
+        const optionValues = new Set(options.map((opt) => opt.value))
+        const validSelectedValues = selectedValues.filter((val) =>
+          optionValues.has(val)
+        )
+
+        if (validSelectedValues.length !== selectedValues.length) {
+          setSelectedValues(validSelectedValues)
+          onValueChange(validSelectedValues)
+        }
+      }
+    }, [options, selectedValues, onValueChange])
 
     const handleInputKeyDown = (
       event: React.KeyboardEvent<HTMLInputElement>
@@ -212,29 +234,38 @@ export const MultiSelect = React.forwardRef<
     }
 
     const toggleOption = (option: string) => {
+      if (disabled) return
+
       const newSelectedValues = selectedValues.includes(option)
         ? selectedValues.filter((value) => value !== option)
         : [...selectedValues, option]
+
       setSelectedValues(newSelectedValues)
       onValueChange(newSelectedValues)
     }
 
     const handleClear = () => {
+      if (disabled) return
       setSelectedValues([])
       onValueChange([])
+      // Close popover after clearing
+      setTimeout(() => setIsPopoverOpen(false), 100)
     }
 
     const handleTogglePopover = () => {
+      if (disabled) return
       setIsPopoverOpen((prev) => !prev)
     }
 
     const clearExtraOptions = () => {
+      if (disabled) return
       const newSelectedValues = selectedValues.slice(0, maxCount)
       setSelectedValues(newSelectedValues)
       onValueChange(newSelectedValues)
     }
 
     const toggleAll = () => {
+      if (disabled) return
       if (selectedValues.length === options.length) {
         handleClear()
       } else {
@@ -246,17 +277,28 @@ export const MultiSelect = React.forwardRef<
 
     return (
       <Popover
-        open={isPopoverOpen}
-        onOpenChange={setIsPopoverOpen}
+        open={disabled ? false : isPopoverOpen}
+        onOpenChange={(open) => {
+          if (!disabled) {
+            setIsPopoverOpen(open)
+          }
+        }}
         modal={modalPopover}
       >
         <PopoverTrigger asChild>
           <Button
             ref={ref}
             {...props}
-            onClick={handleTogglePopover}
+            onClick={(e) => {
+              if (disabled) {
+                e.preventDefault()
+                return
+              }
+              handleTogglePopover()
+            }}
             className={cn(
               'flex w-full p-1 rounded-md border min-h-10 h-auto items-center justify-between bg-inherit hover:bg-inherit',
+              disabled && 'opacity-50 cursor-not-allowed',
               className
             )}
           >
@@ -278,10 +320,11 @@ export const MultiSelect = React.forwardRef<
                         {IconComponent && (
                           <IconComponent className="h-4 w-4 mr-2" />
                         )}
-                        {option?.label}
+                        {option?.label || value}
                         <XCircle
                           className="ml-2 h-4 w-4  cursor-pointer"
                           onClick={(event) => {
+                            if (disabled) return
                             event.stopPropagation()
                             toggleOption(value)
                           }}
@@ -302,6 +345,7 @@ export const MultiSelect = React.forwardRef<
                       <XCircle
                         className="ml-2 h-4 w-4 cursor-pointer"
                         onClick={(event) => {
+                          if (disabled) return
                           event.stopPropagation()
                           clearExtraOptions()
                         }}
@@ -313,6 +357,7 @@ export const MultiSelect = React.forwardRef<
                   <XIcon
                     className="h-4 mx-2 cursor-pointer text-muted-foreground "
                     onClick={(event) => {
+                      if (disabled) return
                       event.stopPropagation()
                       handleClear()
                     }}
@@ -391,7 +436,14 @@ export const MultiSelect = React.forwardRef<
                     return (
                       <CommandItem
                         key={option.value}
-                        onSelect={() => toggleOption(option.value)}
+                        onSelect={() => {
+                          if (!disabled) {
+                            toggleOption(option.value)
+                            // Keep popover open after selection
+                            setTimeout(() => setIsPopoverOpen(true), 0)
+                          }
+                        }}
+                        disabled={disabled}
                       >
                         <div
                           className={cn(

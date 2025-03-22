@@ -19,6 +19,13 @@ export const metadata: Metadata = {
   description: 'Everything about quality.'
 }
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false
+}
+
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap'
